@@ -2,17 +2,19 @@
 
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from jobhunter.agent.orchestrator import JobSearchOrchestrator
+from jobhunter.config import settings
 from jobhunter.models.job import MatchResult
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
 from jobhunter.scrapers.linkedin import LinkedInScraper
-from jobhunter.storage.repository import InMemoryRepository, StoredSearchRun
+from jobhunter.services.cv_parser import parse_cv_file
+from jobhunter.storage.repository import SQLiteRepository, StoredSearchRun
 
 router = APIRouter(prefix="/api")
-repository = InMemoryRepository()
+repository = SQLiteRepository(database_path=settings.database_path)
 orchestrator = JobSearchOrchestrator(scrapers=[LinkedInScraper()])
 
 
@@ -39,7 +41,7 @@ class SearchResponse(BaseModel):
     results: list[MatchResult]
 
 
-def _extract_profile(cv_text: str, preferred_locations: list[str]) -> tuple[list[str], list[str]]:
+def _extract_profile(cv_text: str) -> tuple[list[str], list[str]]:
     tokens = [token.strip(".,").lower() for token in cv_text.split()]
     skills_catalog = {"python", "fastapi", "sql", "docker", "aws", "kubernetes", "pandas"}
     titles_catalog = {"engineer", "developer", "analyst", "scientist", "manager", "intern"}
@@ -53,20 +55,49 @@ def _extract_profile(cv_text: str, preferred_locations: list[str]) -> tuple[list
     return skills, titles
 
 
-@router.post("/profiles/upload", response_model=UploadCvResponse)
-def upload_cv(payload: UploadCvRequest) -> UploadCvResponse:
+def _store_profile(cv_text: str, preferred_locations: list[str]) -> UploadCvResponse:
     profile_id = str(uuid4())
-    skills, titles = _extract_profile(payload.cv_text, payload.preferred_locations)
+    skills, titles = _extract_profile(cv_text)
+
     profile = CandidateProfile(
         profile_id=profile_id,
-        raw_cv_text=payload.cv_text,
+        raw_cv_text=cv_text,
         skills=skills,
         titles=titles,
-        preferred_locations=payload.preferred_locations,
+        preferred_locations=preferred_locations,
     )
     repository.save_profile(profile)
 
     return UploadCvResponse(profile_id=profile_id, skills=skills, titles=titles)
+
+
+@router.post("/profiles/upload", response_model=UploadCvResponse)
+def upload_cv_text(payload: UploadCvRequest) -> UploadCvResponse:
+    return _store_profile(payload.cv_text, payload.preferred_locations)
+
+
+@router.post("/profiles/upload-file", response_model=UploadCvResponse)
+async def upload_cv_file(
+    cv_file: UploadFile = File(...),
+    preferred_locations: list[str] = Form(default_factory=list),
+) -> UploadCvResponse:
+    file_content = await cv_file.read()
+
+    if not file_content:
+        raise HTTPException(status_code=400, detail="uploaded file is empty")
+
+    if len(file_content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="uploaded file exceeds 5MB limit")
+
+    try:
+        cv_text = parse_cv_file(cv_file.filename or "cv", file_content)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if len(cv_text) < 20:
+        raise HTTPException(status_code=400, detail="extracted CV text is too short")
+
+    return _store_profile(cv_text, preferred_locations)
 
 
 @router.post("/searches", response_model=SearchResponse)

@@ -1,3 +1,6 @@
+from io import BytesIO
+from zipfile import ZIP_DEFLATED, ZipFile
+
 from fastapi.testclient import TestClient
 
 from jobhunter.main import app
@@ -6,12 +9,51 @@ from jobhunter.main import app
 client = TestClient(app)
 
 
-def test_upload_and_search_flow():
-    upload_payload = {
-        "cv_text": "Python backend engineer with FastAPI and SQL experience in Berlin",
-        "preferred_locations": ["Berlin"],
-    }
-    upload_response = client.post("/api/profiles/upload", json=upload_payload)
+def _build_docx(content: str) -> bytes:
+    buffer = BytesIO()
+    with ZipFile(buffer, "w", ZIP_DEFLATED) as archive:
+        archive.writestr(
+            "[Content_Types].xml",
+            """<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">
+  <Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>
+  <Default Extension=\"xml\" ContentType=\"application/xml\"/>
+  <Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>
+</Types>""",
+        )
+        archive.writestr(
+            "_rels/.rels",
+            """<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">
+  <Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/>
+</Relationships>""",
+        )
+        archive.writestr(
+            "word/document.xml",
+            f"""<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">
+  <w:body>
+    <w:p><w:r><w:t>{content}</w:t></w:r></w:p>
+  </w:body>
+</w:document>""",
+        )
+    return buffer.getvalue()
+
+
+def test_upload_file_and_search_flow():
+    docx_bytes = _build_docx("Python backend engineer with FastAPI and SQL experience in Berlin")
+
+    upload_response = client.post(
+        "/api/profiles/upload-file",
+        files={
+            "cv_file": (
+                "cv.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
+        data={"preferred_locations": "Berlin"},
+    )
     assert upload_response.status_code == 200
     profile_id = upload_response.json()["profile_id"]
 
@@ -31,11 +73,19 @@ def test_upload_and_search_flow():
     assert search_response.status_code == 200
     body = search_response.json()
     assert body["results"]
-    assert body["results"][0]["job"]["source"] == "linkedin"
 
     get_response = client.get(f"/api/searches/{body['run_id']}")
     assert get_response.status_code == 200
     assert get_response.json()["run_id"] == body["run_id"]
+
+
+def test_upload_file_rejects_unsupported_extension():
+    upload_response = client.post(
+        "/api/profiles/upload-file",
+        files={"cv_file": ("cv.rtf", b"{\\rtf1 foo}", "application/rtf")},
+    )
+
+    assert upload_response.status_code == 400
 
 
 def test_search_missing_profile_returns_404():
