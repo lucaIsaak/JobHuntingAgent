@@ -3,8 +3,24 @@ name = "jobhunter"
 version = "0.1.0"
 description = "Backend agent that screens job boards (LinkedIn, Xing, StepStone, Indeed, Glassdoor) for matching postings."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "fastapi==0.115.2",
+    "pydantic==2.9.2",
+    "uvicorn==0.32.0",
+    "python-multipart==0.0.12",
+    "pypdf==5.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.3",
+    "httpx==0.27.2",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
