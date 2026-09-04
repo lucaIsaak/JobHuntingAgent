@@ -101,3 +101,28 @@ def test_search_missing_profile_returns_404():
 
     response = client.post("/api/searches", json=payload)
     assert response.status_code == 404
+
+
+def test_search_aggregates_all_local_sources():
+    upload_response = client.post(
+        "/api/profiles/upload",
+        json={"cv_text": "Python backend engineer with SQL and Docker experience."},
+    )
+    assert upload_response.status_code == 200
+
+    response = client.post(
+        "/api/searches",
+        json={
+            "profile_id": upload_response.json()["profile_id"],
+            "criteria": {"limit": 20},
+        },
+    )
+
+    assert response.status_code == 200
+    assert {result["job"]["source"] for result in response.json()["results"]} == {
+        "linkedin",
+        "xing",
+        "stepstone",
+        "indeed",
+        "glassdoor",
+    }

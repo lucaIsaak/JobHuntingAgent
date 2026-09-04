@@ -1,11 +1,13 @@
 """Scores/ranks job postings against a user profile or CV."""
 
+import re
+
 from jobhunter.models.job import MatchResult
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
 
 
 def _tokens(text: str) -> set[str]:
-    return {token.strip().lower() for token in text.replace(",", " ").split() if token.strip()}
+    return set(re.findall(r"[a-z0-9]+", text.lower()))
 
 
 def rank_jobs(

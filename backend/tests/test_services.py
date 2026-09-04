@@ -55,3 +55,24 @@ def test_rank_jobs_orders_by_score():
 
     assert ranked[0].job.url == "https://example.com/1"
     assert ranked[0].score > ranked[1].score
+
+
+def test_rank_jobs_matches_punctuation_separated_terms():
+    profile = CandidateProfile(
+        profile_id="p2",
+        raw_cv_text="Python FastAPI",
+        skills=["python", "fastapi"],
+    )
+    criteria = SearchCriteria(keywords=["fastapi"])
+    posting = JobPosting(
+        source="linkedin",
+        title="Backend Engineer",
+        company="Acme",
+        location="Berlin",
+        description="Build services with FastAPI.",
+        url="https://example.com/3",
+    )
+
+    ranked = rank_jobs(profile, criteria, [posting])
+
+    assert ranked[0].reasons == ["1 skill/keyword matches"]

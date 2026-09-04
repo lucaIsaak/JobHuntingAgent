@@ -10,12 +10,37 @@ from jobhunter.config import settings
 from jobhunter.models.job import MatchResult
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
 from jobhunter.scrapers.linkedin import LinkedInScraper
+from jobhunter.scrapers.arbeitnow import ArbeitnowScraper
+from jobhunter.scrapers.adzuna import AdzunaScraper
+from jobhunter.scrapers.indeed import IndeedScraper
+from jobhunter.scrapers.glassdoor import GlassdoorScraper
+from jobhunter.scrapers.stepstone import StepStoneScraper
+from jobhunter.scrapers.xing import XingScraper
 from jobhunter.services.cv_parser import parse_cv_file
 from jobhunter.storage.repository import SQLiteRepository, StoredSearchRun
 
 router = APIRouter(prefix="/api")
 repository = SQLiteRepository(database_path=settings.database_path)
-orchestrator = JobSearchOrchestrator(scrapers=[LinkedInScraper()])
+scrapers = [
+    LinkedInScraper(),
+    XingScraper(),
+    StepStoneScraper(),
+    IndeedScraper(),
+    GlassdoorScraper(),
+]
+if settings.live_jobs_enabled:
+    scrapers.insert(0, ArbeitnowScraper())
+    if settings.adzuna_app_id and settings.adzuna_app_key:
+        scrapers.insert(
+            0,
+            AdzunaScraper(
+                app_id=settings.adzuna_app_id,
+                app_key=settings.adzuna_app_key,
+                country=settings.adzuna_country,
+            ),
+        )
+
+orchestrator = JobSearchOrchestrator(scrapers=scrapers)
 
 
 class UploadCvRequest(BaseModel):
