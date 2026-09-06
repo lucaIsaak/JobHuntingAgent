@@ -18,7 +18,13 @@ class JobSearchOrchestrator:
     def run_search(self, profile: CandidateProfile, criteria: SearchCriteria) -> list[MatchResult]:
         postings = []
         for scraper in self._scrapers:
-            postings.extend(scraper.search(criteria))
+            scraper_sources = getattr(scraper, "sources", ())
+            if criteria.sources and scraper_sources and not set(scraper_sources) & set(criteria.sources):
+                continue
+            if hasattr(scraper, "search_for_profile"):
+                postings.extend(scraper.search_for_profile(profile, criteria))
+            else:
+                postings.extend(scraper.search(criteria))
 
         unique_postings = deduplicate_postings(postings)
         return rank_jobs(profile=profile, criteria=criteria, postings=unique_postings)

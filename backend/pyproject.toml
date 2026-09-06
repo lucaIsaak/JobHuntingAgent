@@ -9,6 +9,7 @@ dependencies = [
     "uvicorn==0.32.0",
     "python-multipart==0.0.12",
     "pypdf==5.0.1",
+    "python-dotenv==1.0.1",
 ]
 
 [project.optional-dependencies]

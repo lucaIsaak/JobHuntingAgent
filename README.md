@@ -42,3 +42,5 @@ JOBHUNTER_LIVE_JOBS=true ADZUNA_APP_ID=your-id ADZUNA_APP_KEY=your-key ./.venv/b
 Set `ADZUNA_COUNTRY` to another supported country code when needed.
 
 The live adapter is intentionally limited to a compliant public API. Each provider should be integrated through its documented API rather than by bypassing authentication or scraping restricted pages.
+
+Additional configured sources are supported through `JOOBLE_ENDPOINT`, `ARBEITSAGENTUR_ENDPOINT`, and `EURES_ENDPOINT` with their respective provider credentials. Greenhouse and Lever company boards are configured with `GREENHOUSE_BOARDS_JSON` and `LEVER_SITES_JSON`; the CV parser infers industries such as consulting, finance, healthcare, marketing, and technology and searches the matching board group.

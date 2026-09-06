@@ -69,10 +69,15 @@ class SQLiteRepository:
                     raw_cv_text TEXT NOT NULL,
                     skills_json TEXT NOT NULL,
                     titles_json TEXT NOT NULL,
-                    preferred_locations_json TEXT NOT NULL
+                    preferred_locations_json TEXT NOT NULL,
+                    industries_json TEXT NOT NULL DEFAULT '[]'
                 )
                 """
             )
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN industries_json TEXT NOT NULL DEFAULT '[]'")
+            except sqlite3.OperationalError:
+                pass
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS search_runs (
@@ -90,8 +95,8 @@ class SQLiteRepository:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO profiles
-                (profile_id, raw_cv_text, skills_json, titles_json, preferred_locations_json)
-                VALUES (?, ?, ?, ?, ?)
+                (profile_id, raw_cv_text, skills_json, titles_json, preferred_locations_json, industries_json)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
                     profile.profile_id,
@@ -99,6 +104,7 @@ class SQLiteRepository:
                     json.dumps(profile.skills),
                     json.dumps(profile.titles),
                     json.dumps(profile.preferred_locations),
+                    json.dumps(profile.industries),
                 ),
             )
 
@@ -106,7 +112,7 @@ class SQLiteRepository:
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT profile_id, raw_cv_text, skills_json, titles_json, preferred_locations_json
+                SELECT profile_id, raw_cv_text, skills_json, titles_json, preferred_locations_json, industries_json
                 FROM profiles
                 WHERE profile_id = ?
                 """,
@@ -122,6 +128,7 @@ class SQLiteRepository:
             skills=json.loads(row[2]),
             titles=json.loads(row[3]),
             preferred_locations=json.loads(row[4]),
+            industries=json.loads(row[5]),
         )
 
     def save_search_run(self, search_run: StoredSearchRun) -> None:

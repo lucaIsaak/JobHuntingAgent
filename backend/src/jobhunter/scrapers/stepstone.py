@@ -9,6 +9,8 @@ from jobhunter.scrapers.catalog import filter_postings
 class StepStoneScraper(Scraper):
     """Offline StepStone-shaped source used for local development."""
 
+    sources = ("stepstone",)
+
     def search(self, criteria: SearchCriteria):
         postings = [
             JobPosting(

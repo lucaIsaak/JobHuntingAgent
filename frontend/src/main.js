@@ -53,6 +53,19 @@ app.innerHTML = `
           <div class="toggle-row"><div><strong>Remote only</strong><small>Only show roles that can be worked remotely</small></div><label class="switch"><input type="checkbox" id="remote-only" /><span></span></label></div>
           <div class="field"><label for="employment">Employment type</label><select id="employment"><option value="">Any employment type</option><option value="full_time">Full time</option><option value="part_time">Part time</option><option value="contract">Contract</option><option value="intern">Internship</option></select></div>
           <div class="limit-row"><label for="limit">Results <span>1–200</span></label><input type="number" id="limit" min="1" max="200" value="25" /></div>
+          <fieldset class="source-filter"><legend>Sources</legend><div class="source-options">${[
+            ['arbeitnow', 'Arbeitnow'],
+            ['adzuna', 'Adzuna'],
+            ['jooble', 'Jooble'],
+            ['bundesagentur', 'Bundesagentur'],
+            ['greenhouse', 'Greenhouse'],
+            ['lever', 'Lever'],
+            ['linkedin', 'LinkedIn'],
+            ['indeed', 'Indeed'],
+            ['stepstone', 'StepStone'],
+            ['xing', 'XING'],
+            ['glassdoor', 'Glassdoor'],
+          ].map(([value, label]) => `<label><input type="checkbox" name="source" value="${value}" checked /><span>${label}</span></label>`).join('')}</div></fieldset>
           <button class="primary-button search-button" id="run-search" disabled>Run search <span>↗</span></button>
           <div class="profile-hint" id="profile-hint">Save a profile above to unlock search.</div>
         </div>
@@ -99,7 +112,9 @@ async function runSearch() {
   if (!state.profile) return
   state.busy = true; $('run-search').disabled = true; $('run-search').innerHTML = 'Searching... <span>·</span>'
   const employment = $('employment').value
-  const criteria = { role: $('role').value.trim() || null, location: $('location').value.trim() || null, keywords: $('keywords').value.split(',').map((item) => item.trim()).filter(Boolean), remote_only: $('remote-only').checked, employment_types: employment ? [employment] : [], limit: Number($('limit').value) || 25 }
+  const sources = [...document.querySelectorAll('input[name="source"]:checked')].map((input) => input.value)
+  if (!sources.length) { $('result-count').textContent = 'Select at least one source.'; state.busy = false; $('run-search').disabled = false; $('run-search').innerHTML = 'Run search <span>↗</span>'; return }
+  const criteria = { role: $('role').value.trim() || null, location: $('location').value.trim() || null, keywords: $('keywords').value.split(',').map((item) => item.trim()).filter(Boolean), remote_only: $('remote-only').checked, employment_types: employment ? [employment] : [], limit: Number($('limit').value) || 25, sources }
   try { const response = await fetch(`${API_URL}/api/searches`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile_id: state.profile.profile_id, criteria }) }); if (!response.ok) throw new Error(await apiError(response)); renderResults(await response.json()); $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' }) } catch (error) { $('result-count').textContent = error.message; } finally { state.busy = false; $('run-search').disabled = false; $('run-search').innerHTML = 'Run search <span>↗</span>' }
 }
 

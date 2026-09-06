@@ -13,6 +13,7 @@ class CandidateProfile(BaseModel):
     skills: list[str] = Field(default_factory=list)
     titles: list[str] = Field(default_factory=list)
     preferred_locations: list[str] = Field(default_factory=list)
+    industries: list[str] = Field(default_factory=list)
 
 
 class SearchCriteria(BaseModel):
@@ -24,3 +25,4 @@ class SearchCriteria(BaseModel):
     remote_only: bool = False
     employment_types: list[EmploymentType] = Field(default_factory=list)
     limit: int = Field(default=25, ge=1, le=200)
+    sources: list[str] = Field(default_factory=list)

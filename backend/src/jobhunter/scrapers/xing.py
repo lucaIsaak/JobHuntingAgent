@@ -9,6 +9,8 @@ from jobhunter.scrapers.catalog import filter_postings
 class XingScraper(Scraper):
     """Offline Xing-shaped source used for local development."""
 
+    sources = ("xing",)
+
     def search(self, criteria: SearchCriteria):
         postings = [
             JobPosting(

@@ -9,6 +9,8 @@ from jobhunter.scrapers.catalog import filter_postings
 class GlassdoorScraper(Scraper):
     """Offline Glassdoor-shaped source used for local development."""
 
+    sources = ("glassdoor",)
+
     def search(self, criteria: SearchCriteria):
         postings = [
             JobPosting(

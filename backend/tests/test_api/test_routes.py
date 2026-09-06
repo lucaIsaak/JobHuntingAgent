@@ -114,7 +114,10 @@ def test_search_aggregates_all_local_sources():
         "/api/searches",
         json={
             "profile_id": upload_response.json()["profile_id"],
-            "criteria": {"limit": 20},
+            "criteria": {
+                "limit": 20,
+                "sources": ["linkedin", "xing", "stepstone", "indeed", "glassdoor"],
+            },
         },
     )
 
@@ -126,3 +129,21 @@ def test_search_aggregates_all_local_sources():
         "indeed",
         "glassdoor",
     }
+
+
+def test_search_can_limit_sources():
+    upload_response = client.post(
+        "/api/profiles/upload",
+        json={"cv_text": "Python backend engineer with SQL experience."},
+    )
+
+    response = client.post(
+        "/api/searches",
+        json={
+            "profile_id": upload_response.json()["profile_id"],
+            "criteria": {"sources": ["linkedin"], "limit": 20},
+        },
+    )
+
+    assert response.status_code == 200
+    assert {result["job"]["source"] for result in response.json()["results"]} == {"linkedin"}

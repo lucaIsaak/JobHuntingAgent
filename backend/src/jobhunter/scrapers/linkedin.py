@@ -9,6 +9,8 @@ from jobhunter.scrapers.catalog import filter_postings
 class LinkedInScraper(Scraper):
     """Offline LinkedIn-shaped source used for local development."""
 
+    sources = ("linkedin",)
+
     def __init__(self) -> None:
         self._jobs = [
             JobPosting(

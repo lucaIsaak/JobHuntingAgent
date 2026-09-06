@@ -16,6 +16,10 @@ from jobhunter.scrapers.indeed import IndeedScraper
 from jobhunter.scrapers.glassdoor import GlassdoorScraper
 from jobhunter.scrapers.stepstone import StepStoneScraper
 from jobhunter.scrapers.xing import XingScraper
+from jobhunter.scrapers.company_boards import CompanyBoardScraper
+from jobhunter.scrapers.configured_api import ConfiguredJsonScraper
+from jobhunter.scrapers.jooble import JoobleScraper
+from jobhunter.scrapers.bundesagentur import BundesagenturScraper
 from jobhunter.services.cv_parser import parse_cv_file
 from jobhunter.storage.repository import SQLiteRepository, StoredSearchRun
 
@@ -39,6 +43,21 @@ if settings.live_jobs_enabled:
                 country=settings.adzuna_country,
             ),
         )
+    if settings.jooble_api_key:
+        scrapers.append(JoobleScraper(settings.jooble_api_key, settings.jooble_endpoint or "https://jooble.org/api"))
+    if settings.arbeitsagentur_token:
+        scrapers.append(
+            BundesagenturScraper(
+                client_id=settings.arbeitsagentur_token,
+                endpoint=settings.arbeitsagentur_endpoint
+                or "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs",
+            )
+        )
+    scrapers.extend([
+        ConfiguredJsonScraper("eures", settings.eures_endpoint, settings.eures_token)
+    ] if settings.eures_endpoint else [])
+    if settings.greenhouse_boards or settings.lever_sites:
+        scrapers.append(CompanyBoardScraper(settings.greenhouse_boards, settings.lever_sites))
 
 orchestrator = JobSearchOrchestrator(scrapers=scrapers)
 
@@ -80,9 +99,22 @@ def _extract_profile(cv_text: str) -> tuple[list[str], list[str]]:
     return skills, titles
 
 
+def _extract_industries(cv_text: str) -> list[str]:
+    text = cv_text.lower()
+    signals = {
+        "consulting": ("consulting", "consultant", "advisory", "strategy"),
+        "finance": ("finance", "banking", "investment", "accounting"),
+        "healthcare": ("healthcare", "hospital", "clinical", "pharma"),
+        "technology": ("software", "python", "developer", "engineering", "api"),
+        "marketing": ("marketing", "brand", "campaign", "communications"),
+    }
+    return sorted(industry for industry, terms in signals.items() if any(term in text for term in terms))
+
+
 def _store_profile(cv_text: str, preferred_locations: list[str]) -> UploadCvResponse:
     profile_id = str(uuid4())
     skills, titles = _extract_profile(cv_text)
+    industries = _extract_industries(cv_text)
 
     profile = CandidateProfile(
         profile_id=profile_id,
@@ -90,6 +122,7 @@ def _store_profile(cv_text: str, preferred_locations: list[str]) -> UploadCvResp
         skills=skills,
         titles=titles,
         preferred_locations=preferred_locations,
+        industries=industries,
     )
     repository.save_profile(profile)
 

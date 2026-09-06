@@ -58,6 +58,8 @@ def _to_posting(item: dict[str, object]) -> JobPosting | None:
 class ArbeitnowScraper(Scraper):
     """Fetches current jobs from Arbeitnow's public API."""
 
+    sources = ("arbeitnow",)
+
     def __init__(
         self,
         endpoint: str = ARBEITNOW_URL,

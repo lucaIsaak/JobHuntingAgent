@@ -34,6 +34,8 @@ def _employment_type(value: object) -> EmploymentType:
 class AdzunaScraper(Scraper):
     """Fetch current jobs from Adzuna's documented search API."""
 
+    sources = ("adzuna",)
+
     def __init__(
         self,
         app_id: str,

@@ -9,6 +9,8 @@ from jobhunter.scrapers.catalog import filter_postings
 class IndeedScraper(Scraper):
     """Offline Indeed-shaped source used for local development."""
 
+    sources = ("indeed",)
+
     def search(self, criteria: SearchCriteria):
         postings = [
             JobPosting(
