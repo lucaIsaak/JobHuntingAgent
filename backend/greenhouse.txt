@@ -1,0 +1,27 @@
+| Company      | Board token |
+| ------------ | ----------- |
+| Airbnb       | airbnb      |
+| Stripe       | stripe      |
+| Anthropic    | anthropic   |
+| Notion       | notion      |
+| Linear       | linear      |
+| Vercel       | vercel      |
+| Figma        | figma       |
+| Instacart    | instacart   |
+| DoorDash     | doordash    |
+| Asana        | asana       |
+| Brex         | brex        |
+| Ramp         | ramp        |
+| Plaid        | plaid       |
+| Robinhood    | robinhood   |
+| Coinbase     | coinbase    |
+| Webflow      | webflow     |
+| Loom         | loom        |
+| Retool       | retool      |
+| Rippling     | rippling    |
+| Gusto        | gusto       |
+| Mercury      | mercury     |
+| Replit       | replit      |
+| Perplexity   | perplexity  |
+| Hugging Face | huggingface |
+| OpenAI       | openai      |
