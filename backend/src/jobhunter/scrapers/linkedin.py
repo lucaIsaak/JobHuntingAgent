@@ -3,7 +3,6 @@
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
-from jobhunter.scrapers.catalog import filter_postings
 
 
 class LinkedInScraper(Scraper):
@@ -46,4 +45,4 @@ class LinkedInScraper(Scraper):
         ]
 
     def search(self, criteria: SearchCriteria) -> list[JobPosting]:
-        return filter_postings(self._jobs, criteria)
+        return self._jobs

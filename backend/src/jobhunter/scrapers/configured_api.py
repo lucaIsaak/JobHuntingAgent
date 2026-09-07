@@ -10,7 +10,6 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
-from jobhunter.scrapers.catalog import filter_postings
 
 
 class ConfiguredJsonScraper(Scraper):
@@ -47,4 +46,4 @@ class ConfiguredJsonScraper(Scraper):
                 description=str(item.get("description", "")),
                 url=str(item.get("url", item.get("redirect_url", ""))),
             ))
-        return filter_postings([job for job in jobs if job.title and job.url], criteria)
+        return [job for job in jobs if job.title and job.url]

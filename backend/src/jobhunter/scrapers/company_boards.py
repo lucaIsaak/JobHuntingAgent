@@ -11,7 +11,6 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
 from jobhunter.scrapers.base import Scraper
-from jobhunter.scrapers.catalog import filter_postings
 
 
 def _text(value: object) -> str:
@@ -57,7 +56,7 @@ class GreenhouseScraper(Scraper):
                     description=_text(item.get("content", "")),
                     url=str(item.get("absolute_url", "")),
                 ))
-        return filter_postings([job for job in postings if job.title and job.url], criteria)
+        return [job for job in postings if job.title and job.url]
 
 
 class LeverScraper(Scraper):
@@ -89,7 +88,7 @@ class LeverScraper(Scraper):
                     description=_text(item.get("descriptionPlain", item.get("description", ""))),
                     url=str(item.get("hostedUrl", item.get("applyUrl", ""))),
                 ))
-        return filter_postings([job for job in postings if job.title and job.url], criteria)
+        return [job for job in postings if job.title and job.url]
 
 
 class CompanyBoardScraper:
@@ -104,8 +103,13 @@ class CompanyBoardScraper:
 
     def search_for_profile(self, profile: CandidateProfile, criteria: SearchCriteria) -> Sequence[JobPosting]:
         industries = set(profile.industries) or {"technology"}
-        greenhouse = {board for industry in industries for board in self._greenhouse.get(industry, [])}
-        lever = {site for industry in industries for site in self._lever.get(industry, [])}
-        jobs = list(GreenhouseScraper(greenhouse, self._fetch).search(criteria))
-        jobs.extend(LeverScraper(lever, self._fetch).search(criteria))
+        wanted_sources = set(criteria.sources) or set(self.sources)
+
+        jobs: list[JobPosting] = []
+        if "greenhouse" in wanted_sources:
+            greenhouse = {board for industry in industries for board in self._greenhouse.get(industry, [])}
+            jobs.extend(GreenhouseScraper(greenhouse, self._fetch).search(criteria))
+        if "lever" in wanted_sources:
+            lever = {site for industry in industries for site in self._lever.get(industry, [])}
+            jobs.extend(LeverScraper(lever, self._fetch).search(criteria))
         return jobs

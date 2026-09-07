@@ -12,7 +12,6 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
-from jobhunter.scrapers.catalog import filter_postings
 
 ARBEITNOW_URL = "https://www.arbeitnow.com/api/job-board-api"
 
@@ -85,11 +84,10 @@ class ArbeitnowScraper(Scraper):
         if not isinstance(items, list):
             return []
 
-        postings = [
+        return [
             posting
             for item in items
             if isinstance(item, dict)
             for posting in [_to_posting(item)]
             if posting is not None
         ]
-        return filter_postings(postings, criteria)

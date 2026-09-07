@@ -12,7 +12,6 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
-from jobhunter.scrapers.catalog import filter_postings
 
 ADZUNA_API_URL = "https://api.adzuna.com/v1/api"
 
@@ -102,4 +101,4 @@ class AdzunaScraper(Scraper):
                     url=url,
                 )
             )
-        return filter_postings(postings, criteria)
+        return postings

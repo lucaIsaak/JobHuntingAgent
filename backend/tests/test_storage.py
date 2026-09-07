@@ -50,3 +50,45 @@ def test_sqlite_repository_persists_profiles_and_runs(tmp_path):
     assert stored_run.profile_id == "profile-1"
     assert stored_run.criteria.role == "engineer"
     assert stored_run.results[0].job.title == "Python Engineer"
+
+
+def test_sqlite_repository_persists_discovered_jobs(tmp_path):
+    db_path = tmp_path / "jobhunter-test.db"
+    repository = SQLiteRepository(str(db_path))
+
+    postings = [
+        JobPosting(
+            source="arbeitnow",
+            title="Backend Engineer",
+            company="Acme",
+            location="Berlin",
+            is_remote=True,
+            employment_type=EmploymentType.FULL_TIME,
+            description="Build APIs",
+            url="https://example.com/job-1",
+        ),
+        JobPosting(
+            source="bundesagentur",
+            title="Software Developer",
+            company="Beispiel GmbH",
+            location="Munich",
+            is_remote=False,
+            employment_type=EmploymentType.FULL_TIME,
+            description="Entwickeln",
+            url="https://example.com/job-2",
+        ),
+    ]
+
+    repository.save_discovered_jobs("run-1", postings)
+
+    import sqlite3
+
+    with sqlite3.connect(str(db_path)) as conn:
+        rows = conn.execute(
+            "SELECT run_id, source, title, location FROM discovered_jobs ORDER BY id"
+        ).fetchall()
+
+    assert rows == [
+        ("run-1", "arbeitnow", "Backend Engineer", "Berlin"),
+        ("run-1", "bundesagentur", "Software Developer", "Munich"),
+    ]

@@ -31,33 +31,28 @@ scrapers = [
     StepStoneScraper(),
     IndeedScraper(),
     GlassdoorScraper(),
+    ArbeitnowScraper(),
+    BundesagenturScraper(
+        **({"client_id": settings.arbeitsagentur_token} if settings.arbeitsagentur_token else {}),
+        endpoint=settings.arbeitsagentur_endpoint
+        or "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs",
+    ),
 ]
-if settings.live_jobs_enabled:
-    scrapers.insert(0, ArbeitnowScraper())
-    if settings.adzuna_app_id and settings.adzuna_app_key:
-        scrapers.insert(
-            0,
-            AdzunaScraper(
-                app_id=settings.adzuna_app_id,
-                app_key=settings.adzuna_app_key,
-                country=settings.adzuna_country,
-            ),
-        )
-    if settings.jooble_api_key:
-        scrapers.append(JoobleScraper(settings.jooble_api_key, settings.jooble_endpoint or "https://jooble.org/api"))
-    if settings.arbeitsagentur_token:
-        scrapers.append(
-            BundesagenturScraper(
-                client_id=settings.arbeitsagentur_token,
-                endpoint=settings.arbeitsagentur_endpoint
-                or "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs",
-            )
-        )
-    scrapers.extend([
-        ConfiguredJsonScraper("eures", settings.eures_endpoint, settings.eures_token)
-    ] if settings.eures_endpoint else [])
-    if settings.greenhouse_boards or settings.lever_sites:
-        scrapers.append(CompanyBoardScraper(settings.greenhouse_boards, settings.lever_sites))
+if settings.adzuna_app_id and settings.adzuna_app_key:
+    scrapers.insert(
+        0,
+        AdzunaScraper(
+            app_id=settings.adzuna_app_id,
+            app_key=settings.adzuna_app_key,
+            country=settings.adzuna_country,
+        ),
+    )
+if settings.jooble_api_key:
+    scrapers.append(JoobleScraper(settings.jooble_api_key, settings.jooble_endpoint or "https://jooble.org/api"))
+if settings.eures_endpoint:
+    scrapers.append(ConfiguredJsonScraper("eures", settings.eures_endpoint, settings.eures_token))
+if settings.greenhouse_boards or settings.lever_sites:
+    scrapers.append(CompanyBoardScraper(settings.greenhouse_boards, settings.lever_sites))
 
 orchestrator = JobSearchOrchestrator(scrapers=scrapers)
 
@@ -164,21 +159,22 @@ def run_search(payload: SearchRequest) -> SearchResponse:
     if not profile:
         raise HTTPException(status_code=404, detail="profile not found")
 
-    results = orchestrator.run_search(profile=profile, criteria=payload.criteria)
+    outcome = orchestrator.run_search(profile=profile, criteria=payload.criteria)
     run_id = str(uuid4())
     search_run = StoredSearchRun(
         run_id=run_id,
         profile_id=payload.profile_id,
         criteria=payload.criteria,
-        results=results,
+        results=outcome.results,
     )
     repository.save_search_run(search_run)
+    repository.save_discovered_jobs(run_id, outcome.raw_postings)
 
     return SearchResponse(
         run_id=run_id,
         profile_id=payload.profile_id,
         criteria=payload.criteria,
-        results=list(results),
+        results=list(outcome.results),
     )
 
 

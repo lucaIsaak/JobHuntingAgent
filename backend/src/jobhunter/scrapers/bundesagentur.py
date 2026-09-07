@@ -11,7 +11,6 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
-from jobhunter.scrapers.catalog import filter_postings
 
 DEFAULT_ENDPOINT = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs"
 DEFAULT_CLIENT_ID = "jobboerse-jobsuche"
@@ -97,4 +96,4 @@ class BundesagenturScraper(Scraper):
                 description=str(item.get("stellenangebotsBeschreibung", "")),
                 url=url,
             ))
-        return filter_postings(jobs, criteria)
+        return jobs

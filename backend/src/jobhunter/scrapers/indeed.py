@@ -3,7 +3,6 @@
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
-from jobhunter.scrapers.catalog import filter_postings
 
 
 class IndeedScraper(Scraper):
@@ -24,4 +23,4 @@ class IndeedScraper(Scraper):
                 url="https://de.indeed.com/viewjob?jk=jobhunter-indeed-1",
             ),
         ]
-        return filter_postings(postings, criteria)
+        return postings

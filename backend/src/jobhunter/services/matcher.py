@@ -51,4 +51,4 @@ def rank_jobs(
         ranked.append(MatchResult(job=posting, score=score, reasons=reasons or ["baseline candidate match"]))
 
     ranked.sort(key=lambda result: result.score, reverse=True)
-    return ranked[: criteria.limit]
+    return ranked

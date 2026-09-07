@@ -44,4 +44,4 @@ def filter_postings(
             )
         ]
 
-    return results[: criteria.limit]
+    return results

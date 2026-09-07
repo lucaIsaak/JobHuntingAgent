@@ -9,7 +9,6 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
-from jobhunter.scrapers.catalog import filter_postings
 
 
 class JoobleScraper(Scraper):
@@ -55,10 +54,4 @@ class JoobleScraper(Scraper):
                 description=str(item.get("snippet", "")),
                 url=str(item.get("link", "")),
             ))
-        jobs = [job for job in jobs if job.title and job.url]
-        if criteria.remote_only:
-            jobs = [job for job in jobs if job.is_remote]
-        if criteria.employment_types:
-            allowed = set(criteria.employment_types)
-            jobs = [job for job in jobs if job.employment_type in allowed]
-        return jobs[: criteria.limit]
+        return [job for job in jobs if job.title and job.url]

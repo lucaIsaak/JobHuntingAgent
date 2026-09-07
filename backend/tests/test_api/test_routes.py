@@ -3,10 +3,25 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from fastapi.testclient import TestClient
 
+from jobhunter.api import routes
 from jobhunter.main import app
 
 
 client = TestClient(app)
+
+
+def test_real_public_api_sources_are_enabled_by_default():
+    source_names = {source for scraper in routes.scrapers for source in getattr(scraper, "sources", ())}
+
+    assert "arbeitnow" in source_names
+    assert "bundesagentur" in source_names
+
+
+def test_local_frontend_origin_on_alternate_port_is_allowed():
+    response = client.get("/health", headers={"Origin": "http://127.0.0.1:5174"})
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5174"
 
 
 def _build_docx(content: str) -> bytes:
