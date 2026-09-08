@@ -1,5 +1,5 @@
 from jobhunter.models.job import EmploymentType, JobPosting
-from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
+from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria, SeniorityLevel
 from jobhunter.services.dedup import deduplicate_postings
 from jobhunter.services.matcher import rank_jobs
 
@@ -76,3 +76,46 @@ def test_rank_jobs_matches_punctuation_separated_terms():
     ranked = rank_jobs(profile, criteria, [posting])
 
     assert ranked[0].reasons == ["1 skill/keyword matches"]
+
+
+def test_rank_jobs_matches_multi_word_skill_phrase():
+    profile = CandidateProfile(
+        profile_id="p3",
+        raw_cv_text="Machine learning engineer",
+        skills=["machine learning"],
+    )
+    posting = JobPosting(
+        source="linkedin",
+        title="ML Engineer",
+        company="Acme",
+        location="Berlin",
+        description="You will build Machine Learning models for production.",
+        url="https://example.com/4",
+    )
+
+    ranked = rank_jobs(profile, SearchCriteria(), [posting])
+
+    assert ranked[0].reasons == ["1 skill/keyword matches"]
+
+
+def test_rank_jobs_adds_seniority_and_industry_bonus():
+    profile = CandidateProfile(
+        profile_id="p4",
+        raw_cv_text="Senior fintech engineer",
+        skills=["python"],
+        seniority=SeniorityLevel.SENIOR,
+        industries=["fintech"],
+    )
+    posting = JobPosting(
+        source="linkedin",
+        title="Senior Backend Engineer",
+        company="Acme",
+        location="Berlin",
+        description="Build payments infrastructure with Python.",
+        url="https://example.com/5",
+    )
+
+    ranked = rank_jobs(profile, SearchCriteria(), [posting])
+
+    assert "seniority matches (senior)" in ranked[0].reasons
+    assert any("industry/domain matches" in reason for reason in ranked[0].reasons)

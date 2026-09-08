@@ -77,12 +77,27 @@ class SQLiteRepository:
                     skills_json TEXT NOT NULL,
                     titles_json TEXT NOT NULL,
                     preferred_locations_json TEXT NOT NULL,
-                    industries_json TEXT NOT NULL DEFAULT '[]'
+                    industries_json TEXT NOT NULL DEFAULT '[]',
+                    seniority TEXT,
+                    years_of_experience INTEGER,
+                    skill_categories_json TEXT NOT NULL DEFAULT '{}'
                 )
                 """
             )
             try:
                 conn.execute("ALTER TABLE profiles ADD COLUMN industries_json TEXT NOT NULL DEFAULT '[]'")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN seniority TEXT")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN years_of_experience INTEGER")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN skill_categories_json TEXT NOT NULL DEFAULT '{}'")
             except sqlite3.OperationalError:
                 pass
             conn.execute(
@@ -120,8 +135,9 @@ class SQLiteRepository:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO profiles
-                (profile_id, raw_cv_text, skills_json, titles_json, preferred_locations_json, industries_json)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (profile_id, raw_cv_text, skills_json, titles_json, preferred_locations_json, industries_json,
+                 seniority, years_of_experience, skill_categories_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     profile.profile_id,
@@ -130,6 +146,9 @@ class SQLiteRepository:
                     json.dumps(profile.titles),
                     json.dumps(profile.preferred_locations),
                     json.dumps(profile.industries),
+                    profile.seniority.value if profile.seniority else None,
+                    profile.years_of_experience,
+                    json.dumps(profile.skill_categories),
                 ),
             )
 
@@ -137,7 +156,8 @@ class SQLiteRepository:
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT profile_id, raw_cv_text, skills_json, titles_json, preferred_locations_json, industries_json
+                SELECT profile_id, raw_cv_text, skills_json, titles_json, preferred_locations_json, industries_json,
+                       seniority, years_of_experience, skill_categories_json
                 FROM profiles
                 WHERE profile_id = ?
                 """,
@@ -154,6 +174,9 @@ class SQLiteRepository:
             titles=json.loads(row[3]),
             preferred_locations=json.loads(row[4]),
             industries=json.loads(row[5]),
+            seniority=row[6],
+            years_of_experience=row[7],
+            skill_categories=json.loads(row[8]) if row[8] else {},
         )
 
     def save_search_run(self, search_run: StoredSearchRun) -> None:

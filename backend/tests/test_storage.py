@@ -1,5 +1,5 @@
 from jobhunter.models.job import EmploymentType, JobPosting, MatchResult
-from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
+from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria, SeniorityLevel
 from jobhunter.storage.repository import SQLiteRepository, StoredSearchRun
 
 
@@ -50,6 +50,27 @@ def test_sqlite_repository_persists_profiles_and_runs(tmp_path):
     assert stored_run.profile_id == "profile-1"
     assert stored_run.criteria.role == "engineer"
     assert stored_run.results[0].job.title == "Python Engineer"
+
+
+def test_sqlite_repository_persists_seniority_and_years_of_experience(tmp_path):
+    db_path = tmp_path / "jobhunter-test.db"
+    repository = SQLiteRepository(str(db_path))
+
+    profile = CandidateProfile(
+        profile_id="profile-2",
+        raw_cv_text="senior python engineer",
+        skills=["python"],
+        seniority=SeniorityLevel.SENIOR,
+        years_of_experience=7,
+        skill_categories={"programming_languages": ["python"]},
+    )
+    repository.save_profile(profile)
+
+    stored_profile = repository.get_profile("profile-2")
+    assert stored_profile is not None
+    assert stored_profile.seniority == SeniorityLevel.SENIOR
+    assert stored_profile.years_of_experience == 7
+    assert stored_profile.skill_categories == {"programming_languages": ["python"]}
 
 
 def test_sqlite_repository_persists_discovered_jobs(tmp_path):

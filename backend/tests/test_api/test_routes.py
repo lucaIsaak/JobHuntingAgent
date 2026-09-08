@@ -56,7 +56,10 @@ def _build_docx(content: str) -> bytes:
 
 
 def test_upload_file_and_search_flow():
-    docx_bytes = _build_docx("Python backend engineer with FastAPI and SQL experience in Berlin")
+    docx_bytes = _build_docx(
+        "Senior Python backend engineer with 6 years of experience, FastAPI, SQL, Docker "
+        "and Kubernetes, building fintech payments infrastructure in Berlin"
+    )
 
     upload_response = client.post(
         "/api/profiles/upload-file",
@@ -70,7 +73,13 @@ def test_upload_file_and_search_flow():
         data={"preferred_locations": "Berlin"},
     )
     assert upload_response.status_code == 200
-    profile_id = upload_response.json()["profile_id"]
+    upload_body = upload_response.json()
+    profile_id = upload_body["profile_id"]
+
+    assert set(upload_body["skills"]) >= {"python", "fastapi", "sql", "docker", "kubernetes"}
+    assert upload_body["seniority"] == "senior"
+    assert upload_body["years_of_experience"] == 6
+    assert "fintech" in upload_body["industries"]
 
     search_payload = {
         "profile_id": profile_id,

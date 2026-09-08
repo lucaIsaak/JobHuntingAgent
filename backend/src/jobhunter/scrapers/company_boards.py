@@ -11,6 +11,7 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
 from jobhunter.scrapers.base import Scraper
+from jobhunter.scrapers.greenhouse_catalog import GREENHOUSE_COMPANIES, select_top_companies
 
 
 def _text(value: object) -> str:
@@ -96,10 +97,19 @@ class CompanyBoardScraper:
 
     sources = ("greenhouse", "lever")
 
-    def __init__(self, greenhouse: dict[str, list[str]], lever: dict[str, list[str]], fetch=urlopen):
+    def __init__(
+        self,
+        greenhouse: dict[str, list[str]],
+        lever: dict[str, list[str]],
+        fetch=urlopen,
+        catalog: Sequence = GREENHOUSE_COMPANIES,
+        catalog_top_n: int = 5,
+    ):
         self._greenhouse = greenhouse
         self._lever = lever
         self._fetch = fetch
+        self._catalog = catalog
+        self._catalog_top_n = catalog_top_n
 
     def search_for_profile(self, profile: CandidateProfile, criteria: SearchCriteria) -> Sequence[JobPosting]:
         industries = set(profile.industries) or {"technology"}
@@ -107,8 +117,9 @@ class CompanyBoardScraper:
 
         jobs: list[JobPosting] = []
         if "greenhouse" in wanted_sources:
-            greenhouse = {board for industry in industries for board in self._greenhouse.get(industry, [])}
-            jobs.extend(GreenhouseScraper(greenhouse, self._fetch).search(criteria))
+            catalog_boards = set(select_top_companies(profile, self._catalog_top_n, self._catalog))
+            env_boards = {board for industry in industries for board in self._greenhouse.get(industry, [])}
+            jobs.extend(GreenhouseScraper(catalog_boards | env_boards, self._fetch).search(criteria))
         if "lever" in wanted_sources:
             lever = {site for industry in industries for site in self._lever.get(industry, [])}
             jobs.extend(LeverScraper(lever, self._fetch).search(criteria))

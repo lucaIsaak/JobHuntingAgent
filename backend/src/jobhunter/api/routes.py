@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from jobhunter.agent.orchestrator import JobSearchOrchestrator
 from jobhunter.config import settings
 from jobhunter.models.job import MatchResult
-from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
+from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria, SeniorityLevel
 from jobhunter.scrapers.linkedin import LinkedInScraper
 from jobhunter.scrapers.arbeitnow import ArbeitnowScraper
 from jobhunter.scrapers.adzuna import AdzunaScraper
@@ -20,6 +20,7 @@ from jobhunter.scrapers.company_boards import CompanyBoardScraper
 from jobhunter.scrapers.configured_api import ConfiguredJsonScraper
 from jobhunter.scrapers.jooble import JoobleScraper
 from jobhunter.scrapers.bundesagentur import BundesagenturScraper
+from jobhunter.services import profile_extractor
 from jobhunter.services.cv_parser import parse_cv_file
 from jobhunter.storage.repository import SQLiteRepository, StoredSearchRun
 
@@ -51,8 +52,13 @@ if settings.jooble_api_key:
     scrapers.append(JoobleScraper(settings.jooble_api_key, settings.jooble_endpoint or "https://jooble.org/api"))
 if settings.eures_endpoint:
     scrapers.append(ConfiguredJsonScraper("eures", settings.eures_endpoint, settings.eures_token))
-if settings.greenhouse_boards or settings.lever_sites:
-    scrapers.append(CompanyBoardScraper(settings.greenhouse_boards, settings.lever_sites))
+scrapers.append(
+    CompanyBoardScraper(
+        settings.greenhouse_boards,
+        settings.lever_sites,
+        catalog_top_n=settings.greenhouse_catalog_top_n,
+    )
+)
 
 orchestrator = JobSearchOrchestrator(scrapers=scrapers)
 
@@ -66,6 +72,9 @@ class UploadCvResponse(BaseModel):
     profile_id: str
     skills: list[str]
     titles: list[str]
+    seniority: SeniorityLevel | None = None
+    years_of_experience: int | None = None
+    industries: list[str] = Field(default_factory=list)
 
 
 class SearchRequest(BaseModel):
@@ -80,36 +89,13 @@ class SearchResponse(BaseModel):
     results: list[MatchResult]
 
 
-def _extract_profile(cv_text: str) -> tuple[list[str], list[str]]:
-    tokens = [token.strip(".,").lower() for token in cv_text.split()]
-    skills_catalog = {"python", "fastapi", "sql", "docker", "aws", "kubernetes", "pandas"}
-    titles_catalog = {"engineer", "developer", "analyst", "scientist", "manager", "intern"}
-
-    skills = sorted({token for token in tokens if token in skills_catalog})
-    titles = sorted({token for token in tokens if token in titles_catalog})
-
-    if not skills:
-        skills = ["python"]
-
-    return skills, titles
-
-
-def _extract_industries(cv_text: str) -> list[str]:
-    text = cv_text.lower()
-    signals = {
-        "consulting": ("consulting", "consultant", "advisory", "strategy"),
-        "finance": ("finance", "banking", "investment", "accounting"),
-        "healthcare": ("healthcare", "hospital", "clinical", "pharma"),
-        "technology": ("software", "python", "developer", "engineering", "api"),
-        "marketing": ("marketing", "brand", "campaign", "communications"),
-    }
-    return sorted(industry for industry, terms in signals.items() if any(term in text for term in terms))
-
-
 def _store_profile(cv_text: str, preferred_locations: list[str]) -> UploadCvResponse:
     profile_id = str(uuid4())
-    skills, titles = _extract_profile(cv_text)
-    industries = _extract_industries(cv_text)
+    skills, skill_categories = profile_extractor.extract_skills(cv_text)
+    titles = profile_extractor.extract_titles(cv_text)
+    years_of_experience = profile_extractor.extract_years_of_experience(cv_text)
+    seniority = profile_extractor.extract_seniority(cv_text, years_of_experience)
+    industries = profile_extractor.extract_domain_tags(cv_text)
 
     profile = CandidateProfile(
         profile_id=profile_id,
@@ -118,10 +104,20 @@ def _store_profile(cv_text: str, preferred_locations: list[str]) -> UploadCvResp
         titles=titles,
         preferred_locations=preferred_locations,
         industries=industries,
+        seniority=seniority,
+        years_of_experience=years_of_experience,
+        skill_categories=skill_categories,
     )
     repository.save_profile(profile)
 
-    return UploadCvResponse(profile_id=profile_id, skills=skills, titles=titles)
+    return UploadCvResponse(
+        profile_id=profile_id,
+        skills=skills,
+        titles=titles,
+        seniority=seniority,
+        years_of_experience=years_of_experience,
+        industries=industries,
+    )
 
 
 @router.post("/profiles/upload", response_model=UploadCvResponse)

@@ -39,6 +39,7 @@ class Settings:
     lever_sites: dict[str, list[str]] = field(
         default_factory=lambda: _json_mapping("LEVER_SITES_JSON")
     )
+    greenhouse_catalog_top_n: int = int(os.getenv("GREENHOUSE_CATALOG_TOP_N", "5"))
 
 
 settings = Settings()
