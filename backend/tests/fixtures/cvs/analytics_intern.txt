@@ -1,0 +1,26 @@
+Alex Kim
+alex.kim@example.com
+
+SUMMARY
+Data Analytics Intern
+
+EXPERIENCE
+Data Analytics Intern, Northwind Retail
+Jun 2025 - Aug 2025
+- Built weekly sales reports in Excel
+- Assisted senior analysts with SQL queries
+
+EDUCATION
+B.Sc. in Statistics, University of Toronto
+2022 - 2026
+GPA: 3.6/4.0
+
+SKILLS
+SQL, Excel, Python
+
+LANGUAGES
+English (Native)
+
+PROJECTS
+Customer Churn Prediction
+Built a churn prediction model using Python and scikit-learn for a class project.

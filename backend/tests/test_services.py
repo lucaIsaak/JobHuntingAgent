@@ -1,0 +1,121 @@
+from jobhunter.models.job import EmploymentType, JobPosting
+from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria, SeniorityLevel
+from jobhunter.services.dedup import deduplicate_postings
+from jobhunter.services.matcher import rank_jobs
+
+
+def test_deduplicate_postings_removes_duplicates():
+    posting = JobPosting(
+        source="a",
+        title="Python Developer",
+        company="Acme",
+        location="Berlin",
+        is_remote=True,
+        employment_type=EmploymentType.FULL_TIME,
+        description="Python FastAPI",
+        url="https://example.com/1",
+    )
+    duplicate = posting.model_copy(update={"source": "b", "url": "https://example.com/2"})
+
+    unique = deduplicate_postings([posting, duplicate])
+
+    assert len(unique) == 1
+    assert unique[0].url == "https://example.com/1"
+
+
+def test_rank_jobs_orders_by_score():
+    profile = CandidateProfile(
+        profile_id="p1",
+        raw_cv_text="Python FastAPI SQL",
+        skills=["python", "fastapi", "sql"],
+        titles=["engineer"],
+        preferred_locations=["berlin"],
+    )
+    criteria = SearchCriteria(role="engineer", keywords=["python"], remote_only=True)
+    best = JobPosting(
+        source="linkedin",
+        title="Python Backend Engineer",
+        company="Acme",
+        location="Berlin",
+        is_remote=True,
+        employment_type=EmploymentType.FULL_TIME,
+        description="Python FastAPI",
+        url="https://example.com/1",
+    )
+    weaker = best.model_copy(
+        update={
+            "title": "Operations Specialist",
+            "description": "Office operations",
+            "is_remote": False,
+            "url": "https://example.com/2",
+        }
+    )
+
+    ranked = rank_jobs(profile, criteria, [weaker, best])
+
+    assert ranked[0].job.url == "https://example.com/1"
+    assert ranked[0].score > ranked[1].score
+
+
+def test_rank_jobs_matches_punctuation_separated_terms():
+    profile = CandidateProfile(
+        profile_id="p2",
+        raw_cv_text="Python FastAPI",
+        skills=["python", "fastapi"],
+    )
+    criteria = SearchCriteria(role="Data Scientist", keywords=["fastapi"])
+    posting = JobPosting(
+        source="linkedin",
+        title="Backend Engineer",
+        company="Acme",
+        location="Berlin",
+        description="Build services with FastAPI.",
+        url="https://example.com/3",
+    )
+
+    ranked = rank_jobs(profile, criteria, [posting])
+
+    assert ranked[0].reasons == ["1 skill/keyword matches"]
+
+
+def test_rank_jobs_matches_multi_word_skill_phrase():
+    profile = CandidateProfile(
+        profile_id="p3",
+        raw_cv_text="Machine learning engineer",
+        skills=["machine learning"],
+    )
+    posting = JobPosting(
+        source="linkedin",
+        title="ML Engineer",
+        company="Acme",
+        location="Berlin",
+        description="You will build Machine Learning models for production.",
+        url="https://example.com/4",
+    )
+
+    ranked = rank_jobs(profile, SearchCriteria(role="Data Scientist"), [posting])
+
+    assert ranked[0].reasons == ["1 skill/keyword matches"]
+
+
+def test_rank_jobs_adds_seniority_and_industry_bonus():
+    profile = CandidateProfile(
+        profile_id="p4",
+        raw_cv_text="Senior fintech engineer",
+        skills=["python"],
+        seniority=SeniorityLevel.SENIOR,
+        industries=["fintech"],
+    )
+    posting = JobPosting(
+        source="linkedin",
+        title="Senior Backend Engineer",
+        company="Acme",
+        location="Berlin",
+        description="Build payments infrastructure with Python.",
+        url="https://example.com/5",
+    )
+
+    ranked = rank_jobs(profile, SearchCriteria(role="Data Scientist"), [posting])
+
+    assert "seniority matches (senior)" in ranked[0].reasons
+    assert any("industry/domain matches" in reason for reason in ranked[0].reasons)
