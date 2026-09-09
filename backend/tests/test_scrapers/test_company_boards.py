@@ -24,7 +24,7 @@ def test_company_boards_use_candidate_industry(monkeypatch):
             raw_cv_text="consulting internship",
             industries=["consulting"],
         ),
-        SearchCriteria(),
+        SearchCriteria(role="Consultant"),
     )
 
     assert calls == [{"consulting-board"}, {"consulting-site"}]

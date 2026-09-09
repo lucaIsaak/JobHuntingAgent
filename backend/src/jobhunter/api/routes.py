@@ -1,5 +1,6 @@
 """HTTP routes the frontend calls (trigger search, fetch results, etc.)."""
 
+import logging
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -9,13 +10,9 @@ from jobhunter.agent.orchestrator import JobSearchOrchestrator
 from jobhunter.config import settings
 from jobhunter.models.job import MatchResult
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria, SeniorityLevel
-from jobhunter.scrapers.linkedin import LinkedInScraper
 from jobhunter.scrapers.arbeitnow import ArbeitnowScraper
 from jobhunter.scrapers.adzuna import AdzunaScraper
-from jobhunter.scrapers.indeed import IndeedScraper
 from jobhunter.scrapers.glassdoor import GlassdoorScraper
-from jobhunter.scrapers.stepstone import StepStoneScraper
-from jobhunter.scrapers.xing import XingScraper
 from jobhunter.scrapers.company_boards import CompanyBoardScraper
 from jobhunter.scrapers.configured_api import ConfiguredJsonScraper
 from jobhunter.scrapers.jooble import JoobleScraper
@@ -24,13 +21,11 @@ from jobhunter.services import profile_extractor
 from jobhunter.services.cv_parser import parse_cv_file
 from jobhunter.storage.repository import SQLiteRepository, StoredSearchRun
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api")
 repository = SQLiteRepository(database_path=settings.database_path)
 scrapers = [
-    LinkedInScraper(),
-    XingScraper(),
-    StepStoneScraper(),
-    IndeedScraper(),
     GlassdoorScraper(),
     ArbeitnowScraper(),
     BundesagenturScraper(
@@ -78,7 +73,7 @@ class UploadCvResponse(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    profile_id: str
+    profile_id: str | None = None
     criteria: SearchCriteria
 
 
@@ -149,26 +144,43 @@ async def upload_cv_file(
     return _store_profile(cv_text, preferred_locations)
 
 
+def _role_only_profile(role: str) -> CandidateProfile:
+    """Minimal stand-in profile for a search run when no CV profile was built."""
+    profile = CandidateProfile(
+        profile_id=str(uuid4()),
+        raw_cv_text=f"Role-only search: {role}",
+        titles=[role],
+    )
+    repository.save_profile(profile)
+    return profile
+
+
 @router.post("/searches", response_model=SearchResponse)
 def run_search(payload: SearchRequest) -> SearchResponse:
-    profile = repository.get_profile(payload.profile_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="profile not found")
+    if payload.profile_id:
+        profile = repository.get_profile(payload.profile_id)
+        if not profile:
+            raise HTTPException(status_code=404, detail="profile not found")
+    else:
+        profile = _role_only_profile(payload.criteria.role)
 
     outcome = orchestrator.run_search(profile=profile, criteria=payload.criteria)
     run_id = str(uuid4())
     search_run = StoredSearchRun(
         run_id=run_id,
-        profile_id=payload.profile_id,
+        profile_id=profile.profile_id,
         criteria=payload.criteria,
         results=outcome.results,
     )
     repository.save_search_run(search_run)
-    repository.save_discovered_jobs(run_id, outcome.raw_postings)
+    try:
+        repository.save_discovered_jobs(run_id, outcome.raw_postings)
+    except Exception:
+        logger.exception("failed to persist discovered jobs for run %s", run_id)
 
     return SearchResponse(
         run_id=run_id,
-        profile_id=payload.profile_id,
+        profile_id=profile.profile_id,
         criteria=payload.criteria,
         results=list(outcome.results),
     )

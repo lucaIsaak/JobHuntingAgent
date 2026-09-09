@@ -63,7 +63,7 @@ def test_rank_jobs_matches_punctuation_separated_terms():
         raw_cv_text="Python FastAPI",
         skills=["python", "fastapi"],
     )
-    criteria = SearchCriteria(keywords=["fastapi"])
+    criteria = SearchCriteria(role="Data Scientist", keywords=["fastapi"])
     posting = JobPosting(
         source="linkedin",
         title="Backend Engineer",
@@ -93,7 +93,7 @@ def test_rank_jobs_matches_multi_word_skill_phrase():
         url="https://example.com/4",
     )
 
-    ranked = rank_jobs(profile, SearchCriteria(), [posting])
+    ranked = rank_jobs(profile, SearchCriteria(role="Data Scientist"), [posting])
 
     assert ranked[0].reasons == ["1 skill/keyword matches"]
 
@@ -115,7 +115,7 @@ def test_rank_jobs_adds_seniority_and_industry_bonus():
         url="https://example.com/5",
     )
 
-    ranked = rank_jobs(profile, SearchCriteria(), [posting])
+    ranked = rank_jobs(profile, SearchCriteria(role="Data Scientist"), [posting])
 
     assert "seniority matches (senior)" in ranked[0].reasons
     assert any("industry/domain matches" in reason for reason in ranked[0].reasons)

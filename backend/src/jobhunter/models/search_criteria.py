@@ -35,7 +35,7 @@ class CandidateProfile(BaseModel):
 class SearchCriteria(BaseModel):
     """User-entered role, keywords, and filters."""
 
-    role: str | None = None
+    role: str = Field(min_length=2)
     location: str | None = None
     keywords: list[str] = Field(default_factory=list)
     remote_only: bool = False

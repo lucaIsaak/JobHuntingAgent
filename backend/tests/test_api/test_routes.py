@@ -85,11 +85,11 @@ def test_upload_file_and_search_flow():
         "profile_id": profile_id,
         "criteria": {
             "role": "engineer",
-            "location": "Berlin",
-            "keywords": ["python", "fastapi"],
+            "keywords": ["fastapi"],
             "remote_only": True,
-            "employment_types": ["full_time"],
+            "employment_types": ["contract"],
             "limit": 10,
+            "sources": ["glassdoor"],
         },
     }
 
@@ -116,6 +116,7 @@ def test_search_missing_profile_returns_404():
     payload = {
         "profile_id": "does-not-exist",
         "criteria": {
+            "role": "Engineer",
             "keywords": [],
             "remote_only": False,
             "employment_types": [],
@@ -127,32 +128,27 @@ def test_search_missing_profile_returns_404():
     assert response.status_code == 404
 
 
-def test_search_aggregates_all_local_sources():
-    upload_response = client.post(
-        "/api/profiles/upload",
-        json={"cv_text": "Python backend engineer with SQL and Docker experience."},
-    )
-    assert upload_response.status_code == 200
-
+def test_search_without_profile_id_uses_role_only():
     response = client.post(
         "/api/searches",
         json={
-            "profile_id": upload_response.json()["profile_id"],
-            "criteria": {
-                "limit": 20,
-                "sources": ["linkedin", "xing", "stepstone", "indeed", "glassdoor"],
-            },
+            "criteria": {"role": "Engineer", "sources": ["glassdoor"], "limit": 20},
         },
     )
 
     assert response.status_code == 200
-    assert {result["job"]["source"] for result in response.json()["results"]} == {
-        "linkedin",
-        "xing",
-        "stepstone",
-        "indeed",
-        "glassdoor",
-    }
+    body = response.json()
+    assert body["profile_id"]
+    assert {result["job"]["source"] for result in body["results"]} == {"glassdoor"}
+
+
+def test_search_requires_role():
+    response = client.post(
+        "/api/searches",
+        json={"criteria": {"sources": ["glassdoor"], "limit": 20}},
+    )
+
+    assert response.status_code == 422
 
 
 def test_search_can_limit_sources():
@@ -165,9 +161,9 @@ def test_search_can_limit_sources():
         "/api/searches",
         json={
             "profile_id": upload_response.json()["profile_id"],
-            "criteria": {"sources": ["linkedin"], "limit": 20},
+            "criteria": {"role": "Engineer", "sources": ["glassdoor"], "limit": 20},
         },
     )
 
     assert response.status_code == 200
-    assert {result["job"]["source"] for result in response.json()["results"]} == {"linkedin"}
+    assert {result["job"]["source"] for result in response.json()["results"]} == {"glassdoor"}

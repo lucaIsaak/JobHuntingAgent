@@ -21,8 +21,8 @@ app.innerHTML = `
         <p>Your CV, tuned searches, and the roles worth a closer look.</p>
       </div>
       <nav class="steps" aria-label="Search steps">
-        <div class="step active"><span>01</span><div><strong>Your profile</strong><small>Upload a CV to begin</small></div></div>
-        <div class="step"><span>02</span><div><strong>Shape the search</strong><small>Set your ideal parameters</small></div></div>
+        <div class="step active"><span>01</span><div><strong>Shape the search</strong><small>Just tell us the role</small></div></div>
+        <div class="step"><span>02</span><div><strong>Add your CV</strong><small>Optional, sharpens the match</small></div></div>
         <div class="step"><span>03</span><div><strong>Review matches</strong><small>Open roles ranked for you</small></div></div>
       </nav>
       <div class="side-note"><span class="status-dot"></span><span>Local workspace<br><small>Your data stays on this machine.</small></span></div>
@@ -34,9 +34,29 @@ app.innerHTML = `
       <section class="welcome-row"><div><h2>Good morning<span class="accent">.</span></h2><p>Let's make your next move a considered one.</p></div><div class="run-lookup"><label for="run-id">Retrieve a saved run</label><div class="lookup-line"><input id="run-id" placeholder="Paste run ID" /><button class="text-button" id="load-run">Load</button></div></div></section>
 
       <section class="workspace-grid">
+        <div class="panel search-panel">
+          <div class="panel-heading"><div><span class="section-number">01</span><h3>Shape the search</h3></div><span class="panel-caption">FILTERS</span></div>
+          <p class="panel-copy">Tell the agent what a good next role looks like. Role is the only thing required.</p>
+          <div class="field-grid"><div class="field full"><label for="role">Role <span>required</span></label><input id="role" placeholder="e.g. Backend Engineer" /></div><div class="field"><label for="location">Location</label><input id="location" placeholder="e.g. Berlin" /></div><div class="field"><label for="keywords">Keywords</label><input id="keywords" placeholder="python, APIs" /></div></div>
+          <div class="toggle-row"><div><strong>Remote only</strong><small>Only show roles that can be worked remotely</small></div><label class="switch"><input type="checkbox" id="remote-only" /><span></span></label></div>
+          <div class="field"><label for="employment">Employment type</label><select id="employment"><option value="">Any employment type</option><option value="full_time">Full time</option><option value="part_time">Part time</option><option value="contract">Contract</option><option value="intern">Internship</option></select></div>
+          <div class="limit-row"><label for="limit">Results <span>1–200</span></label><input type="number" id="limit" min="1" max="200" value="25" /></div>
+          <fieldset class="source-filter"><legend>Sources</legend><div class="source-actions"><button type="button" class="text-button" id="select-all-sources">Select all</button><button type="button" class="text-button" id="deselect-all-sources">Deselect all</button></div><div class="source-options">${[
+            ['arbeitnow', 'Arbeitnow'],
+            ['adzuna', 'Adzuna'],
+            ['jooble', 'Jooble'],
+            ['bundesagentur', 'Bundesagentur'],
+            ['greenhouse', 'Greenhouse'],
+            ['lever', 'Lever'],
+            ['glassdoor', 'Glassdoor'],
+          ].map(([value, label]) => `<label><input type="checkbox" name="source" value="${value}" checked /><span>${label}</span></label>`).join('')}</div></fieldset>
+          <button class="primary-button search-button" id="run-search">Run search <span>↗</span></button>
+          <div class="profile-hint" id="profile-hint">No CV needed — add one below for sharper matches.</div>
+        </div>
+
         <div class="panel profile-panel">
-          <div class="panel-heading"><div><span class="section-number">01</span><h3>Build your profile</h3></div><span class="panel-caption">CV / PROFILE</span></div>
-          <p class="panel-copy">We pull a few signals from your CV to make every search more relevant.</p>
+          <div class="panel-heading"><div><span class="section-number">02</span><h3>Add your CV</h3></div><span class="panel-caption">OPTIONAL</span></div>
+          <p class="panel-copy">Skip this and search on role alone, or add a CV so we can pull a few signals that make every search more relevant.</p>
           <div class="drop-zone" id="drop-zone"><input type="file" id="cv-file" accept=".pdf,.docx,.txt" hidden /><div class="upload-icon">↑</div><strong id="file-label">Drop your CV here</strong><span>PDF, DOCX or TXT · max 5 MB</span><button class="outline-button" id="choose-file">Choose file</button></div>
           <div class="or-line"><span>or paste text</span></div>
           <textarea id="cv-text" placeholder="Paste the text of your CV here (at least 20 characters)..." rows="4"></textarea>
@@ -44,30 +64,6 @@ app.innerHTML = `
           <input id="preferred-locations" placeholder="Berlin, Munich" />
           <button class="primary-button" id="upload-profile">Save profile <span>→</span></button>
           <div class="profile-status" id="profile-status" aria-live="polite"></div>
-        </div>
-
-        <div class="panel search-panel">
-          <div class="panel-heading"><div><span class="section-number">02</span><h3>Shape the search</h3></div><span class="panel-caption">FILTERS</span></div>
-          <p class="panel-copy">Tell the agent what a good next role looks like.</p>
-          <div class="field-grid"><div class="field full"><label for="role">Role</label><input id="role" placeholder="e.g. Backend Engineer" /></div><div class="field"><label for="location">Location</label><input id="location" placeholder="e.g. Berlin" /></div><div class="field"><label for="keywords">Keywords</label><input id="keywords" placeholder="python, APIs" /></div></div>
-          <div class="toggle-row"><div><strong>Remote only</strong><small>Only show roles that can be worked remotely</small></div><label class="switch"><input type="checkbox" id="remote-only" /><span></span></label></div>
-          <div class="field"><label for="employment">Employment type</label><select id="employment"><option value="">Any employment type</option><option value="full_time">Full time</option><option value="part_time">Part time</option><option value="contract">Contract</option><option value="intern">Internship</option></select></div>
-          <div class="limit-row"><label for="limit">Results <span>1–200</span></label><input type="number" id="limit" min="1" max="200" value="25" /></div>
-          <fieldset class="source-filter"><legend>Sources</legend><div class="source-options">${[
-            ['arbeitnow', 'Arbeitnow'],
-            ['adzuna', 'Adzuna'],
-            ['jooble', 'Jooble'],
-            ['bundesagentur', 'Bundesagentur'],
-            ['greenhouse', 'Greenhouse'],
-            ['lever', 'Lever'],
-            ['linkedin', 'LinkedIn'],
-            ['indeed', 'Indeed'],
-            ['stepstone', 'StepStone'],
-            ['xing', 'XING'],
-            ['glassdoor', 'Glassdoor'],
-          ].map(([value, label]) => `<label><input type="checkbox" name="source" value="${value}" checked /><span>${label}</span></label>`).join('')}</div></fieldset>
-          <button class="primary-button search-button" id="run-search" disabled>Run search <span>↗</span></button>
-          <div class="profile-hint" id="profile-hint">Save a profile above to unlock search.</div>
         </div>
       </section>
 
@@ -92,7 +88,6 @@ async function saveProfile() {
     const response = await fetch(`${API_URL}/api/profiles/${file ? 'upload-file' : 'upload'}`, options)
     if (!response.ok) throw new Error(await apiError(response))
     state.profile = await response.json()
-    $('run-search').disabled = false
     $('profile-hint').textContent = `Profile ready · ${state.profile.skills.join(', ')}`
     setStatus(`Profile saved · ${state.profile.skills.length} skill${state.profile.skills.length === 1 ? '' : 's'} found`, 'success')
   } catch (error) { setStatus(error.message, 'error') }
@@ -109,13 +104,16 @@ function renderResults(response) {
 }
 
 async function runSearch() {
-  if (!state.profile) return
+  const role = $('role').value.trim()
+  if (!role) { $('result-count').textContent = 'Enter a role to search for.'; $('role').focus(); return }
+  const sources = [...document.querySelectorAll('input[name="source"]:checked')].map((input) => input.value)
+  if (!sources.length) { $('result-count').textContent = 'Select at least one source.'; return }
   state.busy = true; $('run-search').disabled = true; $('run-search').innerHTML = 'Searching... <span>·</span>'
   const employment = $('employment').value
-  const sources = [...document.querySelectorAll('input[name="source"]:checked')].map((input) => input.value)
-  if (!sources.length) { $('result-count').textContent = 'Select at least one source.'; state.busy = false; $('run-search').disabled = false; $('run-search').innerHTML = 'Run search <span>↗</span>'; return }
-  const criteria = { role: $('role').value.trim() || null, location: $('location').value.trim() || null, keywords: $('keywords').value.split(',').map((item) => item.trim()).filter(Boolean), remote_only: $('remote-only').checked, employment_types: employment ? [employment] : [], limit: Number($('limit').value) || 25, sources }
-  try { const response = await fetch(`${API_URL}/api/searches`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile_id: state.profile.profile_id, criteria }) }); if (!response.ok) throw new Error(await apiError(response)); renderResults(await response.json()); $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' }) } catch (error) { $('result-count').textContent = error.message; } finally { state.busy = false; $('run-search').disabled = false; $('run-search').innerHTML = 'Run search <span>↗</span>' }
+  const criteria = { role, location: $('location').value.trim() || null, keywords: $('keywords').value.split(',').map((item) => item.trim()).filter(Boolean), remote_only: $('remote-only').checked, employment_types: employment ? [employment] : [], limit: Number($('limit').value) || 25, sources }
+  const payload = { criteria }
+  if (state.profile) payload.profile_id = state.profile.profile_id
+  try { const response = await fetch(`${API_URL}/api/searches`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) throw new Error(await apiError(response)); renderResults(await response.json()); $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' }) } catch (error) { $('result-count').textContent = error.message; } finally { state.busy = false; $('run-search').disabled = false; $('run-search').innerHTML = 'Run search <span>↗</span>' }
 }
 
 async function loadRun() { const runId = $('run-id').value.trim(); if (!runId) return; $('result-count').textContent = 'Loading saved run...'; try { const response = await fetch(`${API_URL}/api/searches/${encodeURIComponent(runId)}`); if (!response.ok) throw new Error(await apiError(response)); renderResults(await response.json()) } catch (error) { $('result-count').textContent = error.message } }
@@ -125,6 +123,8 @@ $('cv-file').addEventListener('change', () => { if ($('cv-file').files[0]) $('fi
 $('drop-zone').addEventListener('dragover', (event) => { event.preventDefault(); $('drop-zone').classList.add('dragging') })
 $('drop-zone').addEventListener('dragleave', () => $('drop-zone').classList.remove('dragging'))
 $('drop-zone').addEventListener('drop', (event) => { event.preventDefault(); $('drop-zone').classList.remove('dragging'); if (event.dataTransfer.files[0]) { $('cv-file').files = event.dataTransfer.files; $('file-label').textContent = event.dataTransfer.files[0].name } })
+$('select-all-sources').addEventListener('click', () => { document.querySelectorAll('input[name="source"]').forEach((input) => { input.checked = true }) })
+$('deselect-all-sources').addEventListener('click', () => { document.querySelectorAll('input[name="source"]').forEach((input) => { input.checked = false }) })
 $('upload-profile').addEventListener('click', saveProfile)
 $('run-search').addEventListener('click', runSearch)
 $('load-run').addEventListener('click', loadRun)

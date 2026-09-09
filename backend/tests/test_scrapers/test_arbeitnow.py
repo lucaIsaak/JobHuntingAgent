@@ -46,4 +46,4 @@ def test_arbeitnow_scraper_normalizes_and_filters_jobs():
 def test_arbeitnow_scraper_fails_closed_on_provider_errors():
     scraper = ArbeitnowScraper(fetch=lambda request, timeout: (_ for _ in ()).throw(OSError()))
 
-    assert scraper.search(SearchCriteria()) == []
+    assert scraper.search(SearchCriteria(role="Engineer")) == []
