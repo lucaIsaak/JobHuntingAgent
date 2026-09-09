@@ -7,8 +7,9 @@ from collections.abc import Callable, Sequence
 from urllib.request import Request, urlopen
 
 from jobhunter.models.job import EmploymentType, JobPosting
-from jobhunter.models.search_criteria import SearchCriteria
+from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
 from jobhunter.scrapers.base import Scraper
+from jobhunter.scrapers.catalog import build_search_query
 
 
 class JoobleScraper(Scraper):
@@ -24,8 +25,18 @@ class JoobleScraper(Scraper):
         self._fetch = fetch
 
     def search(self, criteria: SearchCriteria) -> Sequence[JobPosting]:
+        return self._search(criteria.role or " ".join(criteria.keywords), criteria)
+
+    def search_for_profile(
+        self, profile: CandidateProfile, criteria: SearchCriteria
+    ) -> Sequence[JobPosting]:
+        return self._search(build_search_query(profile, criteria), criteria)
+
+    def _search(self, search_term: str, criteria: SearchCriteria) -> Sequence[JobPosting]:
+        # Jooble's API requires the query under "keywords" — "search" is silently rejected with
+        # HTTP 400 (confirmed against the live endpoint), so this field name is load-bearing.
         payload = json.dumps({
-            "search": criteria.role or " ".join(criteria.keywords),
+            "keywords": search_term,
             "location": criteria.location or "",
             "page": 1,
         }).encode()

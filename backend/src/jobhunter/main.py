@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from jobhunter.api.candidate_routes import router as candidate_router
 from jobhunter.api.routes import router
 
 
@@ -12,10 +13,11 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
         allow_credentials=False,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PUT"],
         allow_headers=["Content-Type"],
     )
     app.include_router(router)
+    app.include_router(candidate_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:

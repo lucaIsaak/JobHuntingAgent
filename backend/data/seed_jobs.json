@@ -1,0 +1,2086 @@
+[
+  {
+    "job_id": "analytics-intern-01",
+    "title": "Data Analytics Intern",
+    "normalized_title": "Data Analytics Intern",
+    "company": "Northwind Retail",
+    "industry": "e-commerce",
+    "function": "analytics",
+    "location": "Berlin, Germany",
+    "remote_type": "hybrid",
+    "employment_type": "intern",
+    "seniority": "intern",
+    "description": "Support the analytics team building dashboards and ad-hoc reports for the e-commerce business.",
+    "requirements_must": [
+      "Currently pursuing a degree in a quantitative field",
+      "Comfortable with SQL and Excel"
+    ],
+    "requirements_nice": [
+      "Exposure to Python or R",
+      "Interest in e-commerce"
+    ],
+    "skills": [
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": true
+      },
+      {
+        "name": "Excel",
+        "normalized_name": "Excel",
+        "is_must_have": true
+      },
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": false
+      },
+      {
+        "name": "Power BI",
+        "normalized_name": "Power BI",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Excel",
+      "SQL"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Statistics",
+      "Data Science",
+      "Business Analytics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 0,
+    "years_experience_max": 1,
+    "salary_range": null,
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "analytics-jr-02",
+    "title": "Junior Data Analyst",
+    "normalized_title": "Junior Data Analyst",
+    "company": "Northwind Retail",
+    "industry": "e-commerce",
+    "function": "analytics",
+    "location": "Berlin, Germany",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "junior",
+    "description": "Own weekly reporting on customer acquisition and retention, build self-serve dashboards in Power BI.",
+    "requirements_must": [
+      "1+ years working with SQL",
+      "Experience building dashboards"
+    ],
+    "requirements_nice": [
+      "Experience with Python for data analysis",
+      "Familiarity with A/B testing"
+    ],
+    "skills": [
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": true
+      },
+      {
+        "name": "Power BI",
+        "normalized_name": "Power BI",
+        "is_must_have": true
+      },
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": false
+      },
+      {
+        "name": "Excel",
+        "normalized_name": "Excel",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Power BI",
+      "Excel",
+      "SQL"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      },
+      {
+        "language": "German",
+        "level": "B1"
+      }
+    ],
+    "education_requirements": [
+      "Statistics",
+      "Data Science",
+      "Economics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 1,
+    "years_experience_max": 3,
+    "salary_range": "\u20ac45,000 - \u20ac55,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "analytics-mid-03",
+    "title": "Data Analyst",
+    "normalized_title": "Data Analyst",
+    "company": "Helios Insurance",
+    "industry": "finance",
+    "function": "analytics",
+    "location": "Munich, Germany",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Analyze claims and underwriting data to identify risk trends, partner with actuarial team.",
+    "requirements_must": [
+      "3+ years in a data analyst role",
+      "Advanced SQL",
+      "Experience with Tableau or Power BI"
+    ],
+    "requirements_nice": [
+      "Experience in insurance or financial services",
+      "Python for automation"
+    ],
+    "skills": [
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": true
+      },
+      {
+        "name": "Tableau",
+        "normalized_name": "Tableau",
+        "is_must_have": true
+      },
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": false
+      },
+      {
+        "name": "Statistics",
+        "normalized_name": "Statistics",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Tableau",
+      "SQL",
+      "Excel"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      },
+      {
+        "language": "German",
+        "level": "C1"
+      }
+    ],
+    "education_requirements": [
+      "Statistics",
+      "Mathematics",
+      "Economics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 6,
+    "salary_range": "\u20ac60,000 - \u20ac72,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "analytics-sr-04",
+    "title": "Senior Data Analyst",
+    "normalized_title": "Senior Data Analyst",
+    "company": "Acme Analytics Inc.",
+    "industry": "technology",
+    "function": "analytics",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "senior",
+    "description": "Lead analytics for the growth org, own experimentation framework and executive reporting.",
+    "requirements_must": [
+      "5+ years as a data analyst or similar",
+      "Expert SQL",
+      "A/B testing experience",
+      "Power BI or Tableau"
+    ],
+    "requirements_nice": [
+      "Experience mentoring junior analysts",
+      "Python/pandas"
+    ],
+    "skills": [
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": true
+      },
+      {
+        "name": "Power BI",
+        "normalized_name": "Power BI",
+        "is_must_have": true
+      },
+      {
+        "name": "A/B Testing",
+        "normalized_name": "A/B Testing",
+        "is_must_have": true
+      },
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": false
+      },
+      {
+        "name": "Machine Learning",
+        "normalized_name": "Machine Learning",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Power BI",
+      "Tableau",
+      "SQL",
+      "Excel"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Data Science",
+      "Statistics",
+      "Computer Science"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 5,
+    "years_experience_max": 9,
+    "salary_range": "$110,000 - $135,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "analytics-lead-05",
+    "title": "Lead Business Intelligence Analyst",
+    "normalized_title": "Lead Business Intelligence Analyst",
+    "company": "Meridian Logistics",
+    "industry": "logistics",
+    "function": "analytics",
+    "location": "Amsterdam, Netherlands",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "lead",
+    "description": "Set the BI roadmap for supply chain analytics, lead a team of 3 analysts, own the data warehouse model.",
+    "requirements_must": [
+      "7+ years in BI/analytics",
+      "Experience leading analysts",
+      "Strong SQL and dimensional modeling"
+    ],
+    "requirements_nice": [
+      "Experience with dbt or similar",
+      "Snowflake or BigQuery"
+    ],
+    "skills": [
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": true
+      },
+      {
+        "name": "Power BI",
+        "normalized_name": "Power BI",
+        "is_must_have": true
+      },
+      {
+        "name": "dbt",
+        "normalized_name": "dbt",
+        "is_must_have": false
+      },
+      {
+        "name": "BigQuery",
+        "normalized_name": "BigQuery",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Power BI",
+      "SQL",
+      "dbt"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Data Science",
+      "Computer Science",
+      "Statistics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 7,
+    "years_experience_max": 12,
+    "salary_range": "\u20ac85,000 - \u20ac100,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "analytics-mgr-06",
+    "title": "Analytics Manager",
+    "normalized_title": "Analytics Manager",
+    "company": "Solara Energy",
+    "industry": "energy",
+    "function": "analytics",
+    "location": "Madrid, Spain",
+    "remote_type": "onsite",
+    "employment_type": "full_time",
+    "seniority": "manager",
+    "description": "Manage a team of analysts supporting operations and finance, present findings to leadership.",
+    "requirements_must": [
+      "6+ years analytics experience",
+      "2+ years managing people",
+      "Executive communication skills"
+    ],
+    "requirements_nice": [
+      "Experience in energy or utilities",
+      "SQL and Python"
+    ],
+    "skills": [
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": true
+      },
+      {
+        "name": "Leadership",
+        "normalized_name": "Leadership",
+        "is_must_have": true
+      },
+      {
+        "name": "Stakeholder Management",
+        "normalized_name": "Stakeholder Management",
+        "is_must_have": true
+      },
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": false
+      },
+      {
+        "name": "Power BI",
+        "normalized_name": "Power BI",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "SQL",
+      "Excel",
+      "Power BI"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      },
+      {
+        "language": "Spanish",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Business Administration",
+      "Statistics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 6,
+    "years_experience_max": 10,
+    "salary_range": "\u20ac70,000 - \u20ac90,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "ml-jr-07",
+    "title": "Junior Machine Learning Engineer",
+    "normalized_title": "Junior Machine Learning Engineer",
+    "company": "Cortex Labs",
+    "industry": "ai_ml",
+    "function": "engineering",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "junior",
+    "description": "Support senior ML engineers building and evaluating NLP models for a document-understanding product.",
+    "requirements_must": [
+      "1+ years Python",
+      "Coursework or project experience with machine learning"
+    ],
+    "requirements_nice": [
+      "Experience with PyTorch or TensorFlow",
+      "NLP exposure"
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "Machine Learning",
+        "normalized_name": "Machine Learning",
+        "is_must_have": true
+      },
+      {
+        "name": "PyTorch",
+        "normalized_name": "PyTorch",
+        "is_must_have": false
+      },
+      {
+        "name": "NLP",
+        "normalized_name": "NLP",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "PyTorch",
+      "Python"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science",
+      "Data Science",
+      "Mathematics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 0,
+    "years_experience_max": 2,
+    "salary_range": "$85,000 - $100,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "ml-mid-08",
+    "title": "Machine Learning Engineer",
+    "normalized_title": "Machine Learning Engineer",
+    "company": "Cortex Labs",
+    "industry": "ai_ml",
+    "function": "engineering",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Build and deploy production ML models for document classification and extraction pipelines.",
+    "requirements_must": [
+      "3+ years ML engineering",
+      "Strong Python",
+      "Experience deploying models to production"
+    ],
+    "requirements_nice": [
+      "Experience with LLMs",
+      "AWS or GCP"
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "Machine Learning",
+        "normalized_name": "Machine Learning",
+        "is_must_have": true
+      },
+      {
+        "name": "PyTorch",
+        "normalized_name": "PyTorch",
+        "is_must_have": true
+      },
+      {
+        "name": "AWS",
+        "normalized_name": "AWS",
+        "is_must_have": false
+      },
+      {
+        "name": "Docker",
+        "normalized_name": "Docker",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "PyTorch",
+      "Docker",
+      "AWS"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science",
+      "Data Science"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 6,
+    "salary_range": "$130,000 - $155,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "ml-sr-09",
+    "title": "Senior ML Engineer",
+    "normalized_title": "Senior ML Engineer",
+    "company": "Anthropic",
+    "industry": "ai_ml",
+    "function": "engineering",
+    "location": "San Francisco, USA",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "senior",
+    "description": "Design and train large-scale ML systems, collaborate closely with research on productionizing models.",
+    "requirements_must": [
+      "5+ years ML/software engineering",
+      "Deep learning experience",
+      "Strong distributed systems background"
+    ],
+    "requirements_nice": [
+      "Experience with large language models",
+      "Publication record"
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "Deep Learning",
+        "normalized_name": "Deep Learning",
+        "is_must_have": true
+      },
+      {
+        "name": "Machine Learning",
+        "normalized_name": "Machine Learning",
+        "is_must_have": true
+      },
+      {
+        "name": "PyTorch",
+        "normalized_name": "PyTorch",
+        "is_must_have": false
+      },
+      {
+        "name": "Kubernetes",
+        "normalized_name": "Kubernetes",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "PyTorch",
+      "Kubernetes",
+      "AWS"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science",
+      "Machine Learning"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 5,
+    "years_experience_max": 10,
+    "salary_range": "$190,000 - $260,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "ml-scientist-10",
+    "title": "Data Scientist",
+    "normalized_title": "Data Scientist",
+    "company": "Vitalis Health",
+    "industry": "healthcare",
+    "function": "data_science",
+    "location": "Boston, USA",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Build predictive models for patient outcomes, work closely with clinicians to validate findings.",
+    "requirements_must": [
+      "3+ years data science",
+      "Strong statistics background",
+      "Python and SQL"
+    ],
+    "requirements_nice": [
+      "Experience in healthcare data",
+      "R"
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "Statistics",
+        "normalized_name": "Statistics",
+        "is_must_have": true
+      },
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": true
+      },
+      {
+        "name": "Machine Learning",
+        "normalized_name": "Machine Learning",
+        "is_must_have": false
+      },
+      {
+        "name": "R",
+        "normalized_name": "R",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Python",
+      "SQL"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Statistics",
+      "Data Science",
+      "Biostatistics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 6,
+    "salary_range": "$120,000 - $140,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "ml-lead-11",
+    "title": "Lead Data Scientist",
+    "normalized_title": "Lead Data Scientist",
+    "company": "Perihelion Robotics",
+    "industry": "ai_ml",
+    "function": "data_science",
+    "location": "Toronto, Canada",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "lead",
+    "description": "Lead a small data science team building computer vision models for warehouse robotics.",
+    "requirements_must": [
+      "6+ years data science/ML",
+      "Computer vision experience",
+      "Experience leading a team"
+    ],
+    "requirements_nice": [
+      "Experience with edge deployment",
+      "PyTorch or TensorFlow"
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "Computer Vision",
+        "normalized_name": "Computer Vision",
+        "is_must_have": true
+      },
+      {
+        "name": "Machine Learning",
+        "normalized_name": "Machine Learning",
+        "is_must_have": true
+      },
+      {
+        "name": "PyTorch",
+        "normalized_name": "PyTorch",
+        "is_must_have": false
+      },
+      {
+        "name": "Docker",
+        "normalized_name": "Docker",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "PyTorch",
+      "Docker"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science",
+      "Robotics",
+      "Machine Learning"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 6,
+    "years_experience_max": 10,
+    "salary_range": "CAD 150,000 - 180,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "ml-research-12",
+    "title": "Research Scientist, NLP",
+    "normalized_title": "Research Scientist, NLP",
+    "company": "Lucid AI",
+    "industry": "ai_ml",
+    "function": "research",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "senior",
+    "description": "Push the state of the art in NLP, publish research, and translate findings into product features.",
+    "requirements_must": [
+      "PhD or equivalent research experience",
+      "Strong publication record",
+      "Deep learning expertise"
+    ],
+    "requirements_nice": [
+      "Experience with LLM fine-tuning",
+      "Open-source contributions"
+    ],
+    "skills": [
+      {
+        "name": "Deep Learning",
+        "normalized_name": "Deep Learning",
+        "is_must_have": true
+      },
+      {
+        "name": "NLP",
+        "normalized_name": "NLP",
+        "is_must_have": true
+      },
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "PyTorch",
+        "normalized_name": "PyTorch",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "PyTorch"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science",
+      "Machine Learning"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 4,
+    "years_experience_max": 12,
+    "salary_range": "$180,000 - $240,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "mkt-jr-13",
+    "title": "Marketing Coordinator",
+    "normalized_title": "Marketing Coordinator",
+    "company": "Bloom & Co",
+    "industry": "marketing",
+    "function": "marketing",
+    "location": "Austin, USA",
+    "remote_type": "onsite",
+    "employment_type": "full_time",
+    "seniority": "junior",
+    "description": "Support campaign execution across email, social, and paid channels for a DTC beauty brand.",
+    "requirements_must": [
+      "1+ years in a marketing role",
+      "Familiarity with email marketing tools"
+    ],
+    "requirements_nice": [
+      "Experience with Google Analytics",
+      "Copywriting skills"
+    ],
+    "skills": [
+      {
+        "name": "Email Marketing",
+        "normalized_name": "Email Marketing",
+        "is_must_have": true
+      },
+      {
+        "name": "Social Media Marketing",
+        "normalized_name": "Social Media Marketing",
+        "is_must_have": true
+      },
+      {
+        "name": "Google Analytics",
+        "normalized_name": "Google Analytics",
+        "is_must_have": false
+      },
+      {
+        "name": "Copywriting",
+        "normalized_name": "Copywriting",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Mailchimp",
+      "Google Analytics"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Marketing",
+      "Communications",
+      "Business"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 1,
+    "years_experience_max": 3,
+    "salary_range": "$50,000 - $60,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "mkt-mid-14",
+    "title": "Performance Marketing Manager",
+    "normalized_title": "Performance Marketing Manager",
+    "company": "Bloom & Co",
+    "industry": "marketing",
+    "function": "marketing",
+    "location": "Austin, USA",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Own paid acquisition across Google and Meta, manage a growing budget and report on CAC/ROAS.",
+    "requirements_must": [
+      "3+ years in performance marketing",
+      "Experience managing Google Ads and Meta Ads budgets"
+    ],
+    "requirements_nice": [
+      "Experience with marketing automation",
+      "SQL for reporting"
+    ],
+    "skills": [
+      {
+        "name": "SEM",
+        "normalized_name": "SEM",
+        "is_must_have": true
+      },
+      {
+        "name": "Google Ads",
+        "normalized_name": "Google Ads",
+        "is_must_have": true
+      },
+      {
+        "name": "PPC",
+        "normalized_name": "PPC",
+        "is_must_have": true
+      },
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": false
+      },
+      {
+        "name": "Google Analytics",
+        "normalized_name": "Google Analytics",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Google Ads",
+      "Google Analytics"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Marketing",
+      "Business"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 6,
+    "salary_range": "$85,000 - $105,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "mkt-sr-15",
+    "title": "Senior Marketing Manager, Growth",
+    "normalized_title": "Senior Marketing Manager, Growth",
+    "company": "Vantage Fintech",
+    "industry": "fintech",
+    "function": "marketing",
+    "location": "London, UK",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "senior",
+    "description": "Own the growth marketing strategy across paid, lifecycle, and content for a scaling fintech product.",
+    "requirements_must": [
+      "5+ years growth marketing",
+      "Experience with multi-channel campaigns",
+      "Strong analytical skills"
+    ],
+    "requirements_nice": [
+      "Experience in fintech or regulated industries",
+      "SQL"
+    ],
+    "skills": [
+      {
+        "name": "Growth Marketing",
+        "normalized_name": "Growth Marketing",
+        "is_must_have": true
+      },
+      {
+        "name": "SEO",
+        "normalized_name": "SEO",
+        "is_must_have": true
+      },
+      {
+        "name": "Content Marketing",
+        "normalized_name": "Content Marketing",
+        "is_must_have": true
+      },
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": false
+      },
+      {
+        "name": "Google Analytics",
+        "normalized_name": "Google Analytics",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Google Analytics",
+      "HubSpot"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Marketing",
+      "Business",
+      "Economics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 5,
+    "years_experience_max": 9,
+    "salary_range": "\u00a370,000 - \u00a390,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "mkt-brand-16",
+    "title": "Brand Marketing Lead",
+    "normalized_title": "Brand Marketing Lead",
+    "company": "Solstice Apparel",
+    "industry": "e-commerce",
+    "function": "marketing",
+    "location": "New York, USA",
+    "remote_type": "onsite",
+    "employment_type": "full_time",
+    "seniority": "lead",
+    "description": "Own brand strategy and creative direction across all consumer touchpoints for a fashion brand.",
+    "requirements_must": [
+      "6+ years brand marketing",
+      "Experience leading creative campaigns",
+      "Strong storytelling ability"
+    ],
+    "requirements_nice": [
+      "Experience in fashion/apparel",
+      "Influencer marketing experience"
+    ],
+    "skills": [
+      {
+        "name": "Brand Strategy",
+        "normalized_name": "Brand Strategy",
+        "is_must_have": true
+      },
+      {
+        "name": "Content Marketing",
+        "normalized_name": "Content Marketing",
+        "is_must_have": true
+      },
+      {
+        "name": "Influencer Marketing",
+        "normalized_name": "Influencer Marketing",
+        "is_must_have": false
+      },
+      {
+        "name": "Social Media Marketing",
+        "normalized_name": "Social Media Marketing",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Google Analytics"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Marketing",
+      "Communications"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 6,
+    "years_experience_max": 10,
+    "salary_range": "$110,000 - $130,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "mkt-senior-multilingual-17",
+    "title": "Senior Marketing Manager, DACH",
+    "normalized_title": "Senior Marketing Manager, DACH",
+    "company": "Alpenglow Consumer Goods",
+    "industry": "cpg",
+    "function": "marketing",
+    "location": "Berlin, Germany",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "senior",
+    "description": "Lead marketing strategy for the DACH region across digital and traditional channels for a CPG brand, partner closely with sales and regional agencies.",
+    "requirements_must": [
+      "5+ years marketing experience",
+      "Fluent German and English",
+      "Experience managing agency relationships"
+    ],
+    "requirements_nice": [
+      "Experience in CPG",
+      "SEO/SEM experience"
+    ],
+    "skills": [
+      {
+        "name": "Brand Strategy",
+        "normalized_name": "Brand Strategy",
+        "is_must_have": true
+      },
+      {
+        "name": "Campaign Management",
+        "normalized_name": "Campaign Management",
+        "is_must_have": true
+      },
+      {
+        "name": "Market Research",
+        "normalized_name": "Market Research",
+        "is_must_have": true
+      },
+      {
+        "name": "SEO",
+        "normalized_name": "SEO",
+        "is_must_have": false
+      },
+      {
+        "name": "Google Analytics",
+        "normalized_name": "Google Analytics",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Google Analytics",
+      "SAP"
+    ],
+    "languages_required": [
+      {
+        "language": "German",
+        "level": "native"
+      },
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Marketing",
+      "Business Administration"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 5,
+    "years_experience_max": 10,
+    "salary_range": "\u20ac75,000 - \u20ac95,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "mkt-crm-18",
+    "title": "CRM Marketing Specialist",
+    "normalized_title": "CRM Marketing Specialist",
+    "company": "Vantage Fintech",
+    "industry": "fintech",
+    "function": "marketing",
+    "location": "London, UK",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Own lifecycle marketing campaigns in the CRM, drive retention and reactivation for existing customers.",
+    "requirements_must": [
+      "2+ years CRM/lifecycle marketing",
+      "Experience with HubSpot or Salesforce Marketing Cloud"
+    ],
+    "requirements_nice": [
+      "SQL for segment building",
+      "A/B testing experience"
+    ],
+    "skills": [
+      {
+        "name": "CRM",
+        "normalized_name": "CRM",
+        "is_must_have": true
+      },
+      {
+        "name": "Email Marketing",
+        "normalized_name": "Email Marketing",
+        "is_must_have": true
+      },
+      {
+        "name": "HubSpot",
+        "normalized_name": "HubSpot",
+        "is_must_have": true
+      },
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": false
+      },
+      {
+        "name": "A/B Testing",
+        "normalized_name": "A/B Testing",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "HubSpot",
+      "Salesforce"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Marketing",
+      "Business"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 2,
+    "years_experience_max": 5,
+    "salary_range": "\u00a345,000 - \u00a358,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "sw-jr-19",
+    "title": "Junior Software Engineer",
+    "normalized_title": "Junior Software Engineer",
+    "company": "Vertex Systems",
+    "industry": "technology",
+    "function": "engineering",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "junior",
+    "description": "Build features across the stack for a B2B SaaS platform, working closely with senior engineers.",
+    "requirements_must": [
+      "1+ years professional or internship experience",
+      "Solid fundamentals in a modern language"
+    ],
+    "requirements_nice": [
+      "Experience with React",
+      "Experience with FastAPI or Django"
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "JavaScript",
+        "normalized_name": "JavaScript",
+        "is_must_have": true
+      },
+      {
+        "name": "React",
+        "normalized_name": "React",
+        "is_must_have": false
+      },
+      {
+        "name": "FastAPI",
+        "normalized_name": "FastAPI",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Git",
+      "Docker"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science",
+      "Software Engineering"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 0,
+    "years_experience_max": 2,
+    "salary_range": "$80,000 - $95,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "sw-mid-20",
+    "title": "Software Engineer, Backend",
+    "normalized_title": "Software Engineer, Backend",
+    "company": "Vertex Systems",
+    "industry": "technology",
+    "function": "engineering",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Own backend services for the core platform, design APIs, and improve system reliability.",
+    "requirements_must": [
+      "3+ years backend engineering",
+      "Experience with Python or Go",
+      "REST API design experience"
+    ],
+    "requirements_nice": [
+      "Experience with Kubernetes",
+      "PostgreSQL"
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "REST API",
+        "normalized_name": "REST API",
+        "is_must_have": true
+      },
+      {
+        "name": "PostgreSQL",
+        "normalized_name": "PostgreSQL",
+        "is_must_have": true
+      },
+      {
+        "name": "Kubernetes",
+        "normalized_name": "Kubernetes",
+        "is_must_have": false
+      },
+      {
+        "name": "Docker",
+        "normalized_name": "Docker",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Docker",
+      "Kubernetes",
+      "Git"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 6,
+    "salary_range": "$120,000 - $145,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "sw-frontend-21",
+    "title": "Frontend Engineer",
+    "normalized_title": "Frontend Engineer",
+    "company": "Loom Studio",
+    "industry": "productivity_saas",
+    "function": "engineering",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Build delightful, performant UI for a collaboration product used by millions.",
+    "requirements_must": [
+      "3+ years frontend engineering",
+      "Expert JavaScript/TypeScript",
+      "React experience"
+    ],
+    "requirements_nice": [
+      "Experience with design systems",
+      "Accessibility experience"
+    ],
+    "skills": [
+      {
+        "name": "JavaScript",
+        "normalized_name": "JavaScript",
+        "is_must_have": true
+      },
+      {
+        "name": "TypeScript",
+        "normalized_name": "TypeScript",
+        "is_must_have": true
+      },
+      {
+        "name": "React",
+        "normalized_name": "React",
+        "is_must_have": true
+      },
+      {
+        "name": "Next.js",
+        "normalized_name": "Next.js",
+        "is_must_have": false
+      },
+      {
+        "name": "CSS",
+        "normalized_name": "CSS",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Git",
+      "Figma"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 6,
+    "salary_range": "$125,000 - $150,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "sw-sr-22",
+    "title": "Senior Software Engineer",
+    "normalized_title": "Senior Software Engineer",
+    "company": "Stripe",
+    "industry": "fintech",
+    "function": "engineering",
+    "location": "Dublin, Ireland",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "senior",
+    "description": "Own critical payments infrastructure end to end, mentor engineers, drive technical design.",
+    "requirements_must": [
+      "5+ years software engineering",
+      "Experience with distributed systems",
+      "Strong system design skills"
+    ],
+    "requirements_nice": [
+      "Experience in fintech/payments",
+      "Go or Java"
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "Microservices",
+        "normalized_name": "Microservices",
+        "is_must_have": true
+      },
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": true
+      },
+      {
+        "name": "Kubernetes",
+        "normalized_name": "Kubernetes",
+        "is_must_have": false
+      },
+      {
+        "name": "AWS",
+        "normalized_name": "AWS",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Docker",
+      "Kubernetes",
+      "AWS"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 5,
+    "years_experience_max": 10,
+    "salary_range": "\u20ac95,000 - \u20ac120,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "sw-devops-23",
+    "title": "DevOps Engineer",
+    "normalized_title": "DevOps Engineer",
+    "company": "Meridian Logistics",
+    "industry": "logistics",
+    "function": "engineering",
+    "location": "Amsterdam, Netherlands",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Own CI/CD pipelines and cloud infrastructure supporting the logistics platform.",
+    "requirements_must": [
+      "3+ years DevOps/SRE experience",
+      "Strong AWS or GCP experience",
+      "Terraform experience"
+    ],
+    "requirements_nice": [
+      "Kubernetes experience",
+      "Experience with observability tooling"
+    ],
+    "skills": [
+      {
+        "name": "AWS",
+        "normalized_name": "AWS",
+        "is_must_have": true
+      },
+      {
+        "name": "Terraform",
+        "normalized_name": "Terraform",
+        "is_must_have": true
+      },
+      {
+        "name": "CI/CD",
+        "normalized_name": "CI/CD",
+        "is_must_have": true
+      },
+      {
+        "name": "Kubernetes",
+        "normalized_name": "Kubernetes",
+        "is_must_have": false
+      },
+      {
+        "name": "Docker",
+        "normalized_name": "Docker",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Terraform",
+      "Docker",
+      "Kubernetes"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science",
+      "Information Technology"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 7,
+    "salary_range": "\u20ac75,000 - \u20ac95,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "sw-lead-24",
+    "title": "Lead Full Stack Engineer",
+    "normalized_title": "Lead Full Stack Engineer",
+    "company": "Notion",
+    "industry": "productivity_saas",
+    "function": "engineering",
+    "location": "San Francisco, USA",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "lead",
+    "description": "Lead a small full-stack team shipping core product features end to end.",
+    "requirements_must": [
+      "6+ years full stack engineering",
+      "Experience leading a small team",
+      "React and Node.js/Python"
+    ],
+    "requirements_nice": [
+      "Experience scaling a SaaS product",
+      "Design sensibility"
+    ],
+    "skills": [
+      {
+        "name": "React",
+        "normalized_name": "React",
+        "is_must_have": true
+      },
+      {
+        "name": "Node.js",
+        "normalized_name": "Node.js",
+        "is_must_have": true
+      },
+      {
+        "name": "TypeScript",
+        "normalized_name": "TypeScript",
+        "is_must_have": true
+      },
+      {
+        "name": "PostgreSQL",
+        "normalized_name": "PostgreSQL",
+        "is_must_have": false
+      },
+      {
+        "name": "AWS",
+        "normalized_name": "AWS",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Docker",
+      "Git"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 6,
+    "years_experience_max": 11,
+    "salary_range": "$180,000 - $220,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "sw-intern-25",
+    "title": "Software Engineering Intern",
+    "normalized_title": "Software Engineering Intern",
+    "company": "Vertex Systems",
+    "industry": "technology",
+    "function": "engineering",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "intern",
+    "seniority": "intern",
+    "description": "Ship a real feature end to end over a 12-week internship, paired with a mentor engineer.",
+    "requirements_must": [
+      "Currently pursuing a CS degree or bootcamp",
+      "Basic proficiency in at least one language"
+    ],
+    "requirements_nice": [
+      "Personal projects on GitHub",
+      "Familiarity with git"
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "normalized_name": "Python",
+        "is_must_have": true
+      },
+      {
+        "name": "JavaScript",
+        "normalized_name": "JavaScript",
+        "is_must_have": false
+      },
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Git"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Computer Science"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 0,
+    "years_experience_max": 0,
+    "salary_range": "$35/hour",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "biz-jr-26",
+    "title": "Business Analyst",
+    "normalized_title": "Business Analyst",
+    "company": "Helios Insurance",
+    "industry": "finance",
+    "function": "business_operations",
+    "location": "Munich, Germany",
+    "remote_type": "onsite",
+    "employment_type": "full_time",
+    "seniority": "junior",
+    "description": "Support process improvement initiatives across claims operations, gather requirements from stakeholders.",
+    "requirements_must": [
+      "1+ years in a business/operations role",
+      "Strong Excel skills",
+      "Good communication skills"
+    ],
+    "requirements_nice": [
+      "Experience with SQL",
+      "Process mapping experience"
+    ],
+    "skills": [
+      {
+        "name": "Excel",
+        "normalized_name": "Excel",
+        "is_must_have": true
+      },
+      {
+        "name": "Stakeholder Management",
+        "normalized_name": "Stakeholder Management",
+        "is_must_have": true
+      },
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": false
+      },
+      {
+        "name": "Project Management",
+        "normalized_name": "Project Management",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Excel",
+      "PowerPoint"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      },
+      {
+        "language": "German",
+        "level": "C1"
+      }
+    ],
+    "education_requirements": [
+      "Business Administration",
+      "Economics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 1,
+    "years_experience_max": 3,
+    "salary_range": "\u20ac48,000 - \u20ac56,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "biz-pm-27",
+    "title": "Product Manager",
+    "normalized_title": "Product Manager",
+    "company": "Loom Studio",
+    "industry": "productivity_saas",
+    "function": "product",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Own the roadmap for a core product surface, work closely with design and engineering.",
+    "requirements_must": [
+      "3+ years product management",
+      "Experience shipping B2B SaaS features",
+      "Strong prioritization skills"
+    ],
+    "requirements_nice": [
+      "Experience with SQL for product analytics",
+      "Technical background"
+    ],
+    "skills": [
+      {
+        "name": "Product Management",
+        "normalized_name": "Product Management",
+        "is_must_have": true
+      },
+      {
+        "name": "Stakeholder Management",
+        "normalized_name": "Stakeholder Management",
+        "is_must_have": true
+      },
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": false
+      },
+      {
+        "name": "Agile",
+        "normalized_name": "Agile",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Figma",
+      "SQL"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Business",
+      "Computer Science"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 7,
+    "salary_range": "$130,000 - $155,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "biz-consultant-28",
+    "title": "Management Consultant",
+    "normalized_title": "Management Consultant",
+    "company": "Everest Advisory",
+    "industry": "consulting",
+    "function": "consulting",
+    "location": "Zurich, Switzerland",
+    "remote_type": "onsite",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Lead workstreams on strategy and operations engagements for enterprise clients across industries.",
+    "requirements_must": [
+      "3+ years management consulting or equivalent",
+      "Strong analytical and presentation skills"
+    ],
+    "requirements_nice": [
+      "MBA or equivalent",
+      "Experience in financial services"
+    ],
+    "skills": [
+      {
+        "name": "Strategy",
+        "normalized_name": "Strategy",
+        "is_must_have": true
+      },
+      {
+        "name": "Consulting",
+        "normalized_name": "Consulting",
+        "is_must_have": true
+      },
+      {
+        "name": "Presentation",
+        "normalized_name": "Presentation",
+        "is_must_have": true
+      },
+      {
+        "name": "Excel",
+        "normalized_name": "Excel",
+        "is_must_have": false
+      },
+      {
+        "name": "PowerPoint",
+        "normalized_name": "PowerPoint",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Excel",
+      "PowerPoint"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      },
+      {
+        "language": "German",
+        "level": "professional"
+      }
+    ],
+    "education_requirements": [
+      "Business Administration",
+      "Economics",
+      "MBA"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 7,
+    "salary_range": "CHF 110,000 - 140,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "biz-sales-29",
+    "title": "Account Executive",
+    "normalized_title": "Account Executive",
+    "company": "Ramp",
+    "industry": "fintech",
+    "function": "sales",
+    "location": "New York, USA",
+    "remote_type": "hybrid",
+    "employment_type": "full_time",
+    "seniority": "mid",
+    "description": "Own the full sales cycle for mid-market accounts, from prospecting through close.",
+    "requirements_must": [
+      "3+ years closing B2B sales",
+      "Track record of hitting quota"
+    ],
+    "requirements_nice": [
+      "Experience selling fintech or SaaS",
+      "Salesforce experience"
+    ],
+    "skills": [
+      {
+        "name": "Sales",
+        "normalized_name": "Sales",
+        "is_must_have": true
+      },
+      {
+        "name": "Account Management",
+        "normalized_name": "Account Management",
+        "is_must_have": true
+      },
+      {
+        "name": "Salesforce",
+        "normalized_name": "Salesforce",
+        "is_must_have": false
+      },
+      {
+        "name": "CRM",
+        "normalized_name": "CRM",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Salesforce"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Business",
+      "Communications"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 3,
+    "years_experience_max": 7,
+    "salary_range": "$90,000 base + commission",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "biz-ops-30",
+    "title": "Operations Manager",
+    "normalized_title": "Operations Manager",
+    "company": "Northwind Retail",
+    "industry": "e-commerce",
+    "function": "business_operations",
+    "location": "Berlin, Germany",
+    "remote_type": "onsite",
+    "employment_type": "full_time",
+    "seniority": "manager",
+    "description": "Manage warehouse and fulfillment operations, own KPIs for on-time delivery and cost per order.",
+    "requirements_must": [
+      "5+ years operations management",
+      "Experience managing a team",
+      "Data-driven decision making"
+    ],
+    "requirements_nice": [
+      "Experience in e-commerce fulfillment",
+      "SQL or Excel for reporting"
+    ],
+    "skills": [
+      {
+        "name": "Leadership",
+        "normalized_name": "Leadership",
+        "is_must_have": true
+      },
+      {
+        "name": "Project Management",
+        "normalized_name": "Project Management",
+        "is_must_have": true
+      },
+      {
+        "name": "Excel",
+        "normalized_name": "Excel",
+        "is_must_have": false
+      },
+      {
+        "name": "SQL",
+        "normalized_name": "SQL",
+        "is_must_have": false
+      }
+    ],
+    "tools": [
+      "Excel",
+      "SAP"
+    ],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "professional"
+      },
+      {
+        "language": "German",
+        "level": "C1"
+      }
+    ],
+    "education_requirements": [
+      "Business Administration",
+      "Logistics"
+    ],
+    "required_certifications": [],
+    "years_experience_min": 5,
+    "years_experience_max": 10,
+    "salary_range": "\u20ac65,000 - \u20ac80,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  },
+  {
+    "job_id": "biz-hr-31",
+    "title": "HR Business Partner",
+    "normalized_title": "HR Business Partner",
+    "company": "Rippling",
+    "industry": "hr_tech",
+    "function": "human_resources",
+    "location": "Remote",
+    "remote_type": "remote",
+    "employment_type": "full_time",
+    "seniority": "senior",
+    "description": "Partner with engineering leadership on org design, performance management, and talent strategy.",
+    "requirements_must": [
+      "5+ years HR business partner experience",
+      "Experience supporting a technical org"
+    ],
+    "requirements_nice": [
+      "Experience with HRIS platforms",
+      "SHRM or similar certification"
+    ],
+    "skills": [
+      {
+        "name": "Stakeholder Management",
+        "normalized_name": "Stakeholder Management",
+        "is_must_have": true
+      },
+      {
+        "name": "Leadership",
+        "normalized_name": "Leadership",
+        "is_must_have": true
+      },
+      {
+        "name": "HRIS",
+        "normalized_name": "HRIS",
+        "is_must_have": false
+      }
+    ],
+    "tools": [],
+    "languages_required": [
+      {
+        "language": "English",
+        "level": "native"
+      }
+    ],
+    "education_requirements": [
+      "Human Resources",
+      "Business Administration"
+    ],
+    "required_certifications": [
+      "SHRM-CP"
+    ],
+    "years_experience_min": 5,
+    "years_experience_max": 10,
+    "salary_range": "$110,000 - $135,000",
+    "embedding_json": null,
+    "updated_at": "2026-09-01T00:00:00+00:00"
+  }
+]

@@ -8,25 +8,29 @@ from pydantic import BaseModel, Field
 
 from jobhunter.agent.orchestrator import JobSearchOrchestrator
 from jobhunter.config import settings
+from jobhunter.jobs.from_posting import convert_posting
+from jobhunter.matching.semantic import build_corpus_stats
 from jobhunter.models.job import MatchResult
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria, SeniorityLevel
 from jobhunter.scrapers.arbeitnow import ArbeitnowScraper
 from jobhunter.scrapers.adzuna import AdzunaScraper
-from jobhunter.scrapers.glassdoor import GlassdoorScraper
 from jobhunter.scrapers.company_boards import CompanyBoardScraper
 from jobhunter.scrapers.configured_api import ConfiguredJsonScraper
 from jobhunter.scrapers.jooble import JoobleScraper
 from jobhunter.scrapers.bundesagentur import BundesagenturScraper
 from jobhunter.services import profile_extractor
 from jobhunter.services.cv_parser import parse_cv_file
+from jobhunter.storage.jobs_repository import JobsRepository
 from jobhunter.storage.repository import SQLiteRepository, StoredSearchRun
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
 repository = SQLiteRepository(database_path=settings.database_path)
+# Same SQLite file as api/candidate_routes.py's JobsRepository — every live search's discovered
+# postings converge into the one jobs table the CV matcher reads from.
+live_jobs_repository = JobsRepository(database_path=settings.database_path)
 scrapers = [
-    GlassdoorScraper(),
     ArbeitnowScraper(),
     BundesagenturScraper(
         **({"client_id": settings.arbeitsagentur_token} if settings.arbeitsagentur_token else {}),
@@ -177,6 +181,14 @@ def run_search(payload: SearchRequest) -> SearchResponse:
         repository.save_discovered_jobs(run_id, outcome.raw_postings)
     except Exception:
         logger.exception("failed to persist discovered jobs for run %s", run_id)
+
+    try:
+        live_jobs = [convert_posting(posting) for posting in outcome.raw_postings]
+        live_jobs_repository.upsert_jobs(live_jobs)
+        document_frequency, document_count = build_corpus_stats(live_jobs_repository.all_job_texts())
+        live_jobs_repository.save_corpus_stats(document_frequency, document_count)
+    except Exception:
+        logger.exception("failed to import discovered jobs into the matching database for run %s", run_id)
 
     return SearchResponse(
         run_id=run_id,

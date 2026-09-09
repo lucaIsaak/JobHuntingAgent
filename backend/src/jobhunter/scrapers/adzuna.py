@@ -10,8 +10,9 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from jobhunter.models.job import EmploymentType, JobPosting
-from jobhunter.models.search_criteria import SearchCriteria
+from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
 from jobhunter.scrapers.base import Scraper
+from jobhunter.scrapers.catalog import build_search_query
 
 ADZUNA_API_URL = "https://api.adzuna.com/v1/api"
 
@@ -52,11 +53,19 @@ class AdzunaScraper(Scraper):
         self._fetch = fetch
 
     def search(self, criteria: SearchCriteria) -> Sequence[JobPosting]:
+        return self._search(criteria.role or " ".join(criteria.keywords), criteria)
+
+    def search_for_profile(
+        self, profile: CandidateProfile, criteria: SearchCriteria
+    ) -> Sequence[JobPosting]:
+        return self._search(build_search_query(profile, criteria), criteria)
+
+    def _search(self, what: str, criteria: SearchCriteria) -> Sequence[JobPosting]:
         query = {
             "app_id": self._app_id,
             "app_key": self._app_key,
             "results_per_page": min(criteria.limit, 50),
-            "what": criteria.role or " ".join(criteria.keywords),
+            "what": what,
         }
         if criteria.location:
             query["where"] = criteria.location

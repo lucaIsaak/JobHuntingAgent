@@ -34,3 +34,19 @@ def test_bundesagentur_scraper_normalizes_v6_jobs():
     assert results[0].source == "bundesagentur"
     assert results[0].company == "Example GmbH"
     assert results[0].is_remote is True
+
+
+def test_bundesagentur_scraper_omits_empty_location_param():
+    # The live API returns HTTP 400 when "wo" is present but empty — verified against the real
+    # endpoint. criteria.location=None must not send "wo=" at all, only omit the param.
+    captured_urls = []
+
+    def fake_fetch(request, timeout):
+        captured_urls.append(request.full_url)
+        return FakeResponse({"ergebnisliste": []})
+
+    scraper = BundesagenturScraper(fetch=fake_fetch)
+    scraper.search(SearchCriteria(role="Software Engineer"))
+
+    assert len(captured_urls) == 1
+    assert "wo=" not in captured_urls[0]

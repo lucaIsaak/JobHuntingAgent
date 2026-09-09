@@ -1,9 +1,30 @@
-"""Shared filtering for the local job-source catalog."""
+"""Shared filtering and query-building for the local job-source catalog."""
 
 from collections.abc import Sequence
 
 from jobhunter.models.job import JobPosting
-from jobhunter.models.search_criteria import SearchCriteria
+from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
+
+
+def build_search_query(profile: CandidateProfile, criteria: SearchCriteria, max_terms: int = 4) -> str:
+    """Merge the CV-derived title/skills with the user's explicit role/keywords into one query.
+
+    Used to pre-filter API calls (Adzuna, Jooble, Bundesagentur) that accept a free-text search
+    term. Capped at max_terms so the merged query doesn't over-constrain the API's AND-style
+    text match; filter_postings and rank_jobs narrow further downstream regardless.
+    """
+    ordered_terms = [criteria.role, *profile.titles[:1], *criteria.keywords, *profile.skills[:2]]
+
+    seen: set[str] = set()
+    merged: list[str] = []
+    for term in ordered_terms:
+        key = (term or "").strip().lower()
+        if key and key not in seen:
+            seen.add(key)
+            merged.append(term.strip())
+        if len(merged) >= max_terms:
+            break
+    return " ".join(merged)
 
 
 def filter_postings(

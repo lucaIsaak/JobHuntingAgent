@@ -1,0 +1,30 @@
+Morgan Lee
+morgan.lee@example.com
+
+SUMMARY
+Former high school teacher transitioning into software engineering after completing an intensive coding bootcamp.
+
+EXPERIENCE
+High School Mathematics Teacher, Lincoln High School
+Aug 2018 - Jun 2024
+- Taught algebra and statistics to students grades 9-12
+- Led a team of 3 teachers on curriculum redesign
+- Mentored 15 students in an after-school coding club
+
+Software Engineering Fellow, CodeForward Bootcamp
+Jan 2025 - Apr 2025
+- Built a full-stack web application using Python, JavaScript and SQL
+- Collaborated in an agile team using Scrum
+
+EDUCATION
+B.A. in Mathematics, State University
+2014 - 2018
+
+SKILLS
+Python, JavaScript, SQL, React, Leadership, Agile
+
+LANGUAGES
+English (Native)
+
+CERTIFICATIONS
+AWS Certified Cloud Practitioner
