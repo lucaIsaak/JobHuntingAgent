@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_ENDPOINT = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs"
 DEFAULT_CLIENT_ID = "jobboerse-jobsuche"
+RESULTS_PER_PAGE = 100  # the API's own per-page maximum
+MAX_PAGES = 5  # safety/politeness cap: at most 500 postings per search regardless of criteria.limit
 
 
 class BundesagenturScraper(Scraper):
@@ -48,10 +50,20 @@ class BundesagenturScraper(Scraper):
         return self._search(build_search_query(profile, criteria), criteria)
 
     def _search(self, was: str, criteria: SearchCriteria) -> Sequence[JobPosting]:
+        pages_needed = min(-(-criteria.limit // RESULTS_PER_PAGE), MAX_PAGES)  # ceil division
+        jobs: list[JobPosting] = []
+        for page in range(1, max(pages_needed, 1) + 1):
+            page_jobs = self._search_page(was, criteria, page)
+            jobs.extend(page_jobs)
+            if len(page_jobs) < RESULTS_PER_PAGE:
+                break  # short page means there's nothing more to fetch
+        return jobs
+
+    def _search_page(self, was: str, criteria: SearchCriteria, page: int) -> list[JobPosting]:
         params = {
             "was": was,
-            "page": "1",
-            "size": str(min(criteria.limit, 100)),
+            "page": str(page),
+            "size": str(RESULTS_PER_PAGE),
         }
         # The API 400s on an empty "wo" param — only send it when a location is actually given.
         if criteria.location:
@@ -68,7 +80,7 @@ class BundesagenturScraper(Scraper):
             with self._fetch(request, timeout=5) as response:
                 payload = json.load(response)
         except (OSError, ValueError, TimeoutError) as exc:
-            logger.warning("bundesagentur: search failed: %s", exc)
+            logger.warning("bundesagentur: search failed on page %s: %s", page, exc)
             return []
 
         jobs = []

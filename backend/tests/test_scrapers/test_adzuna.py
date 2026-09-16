@@ -45,6 +45,56 @@ def test_adzuna_scraper_normalizes_job_response():
     assert results[0].description == "Build Python services."
 
 
+def _adzuna_page_payload(count: int, page: int) -> dict:
+    return {
+        "results": [
+            {
+                "title": f"Job {page}-{i}",
+                "company": {"display_name": "Acme"},
+                "location": {"display_name": "Berlin"},
+                "description": "Build things.",
+                "contract_type": "permanent",
+                "redirect_url": f"https://example.com/adzuna/{page}/{i}",
+            }
+            for i in range(count)
+        ]
+    }
+
+
+def test_adzuna_scraper_fetches_additional_pages_to_reach_the_limit():
+    requested_pages = []
+
+    def fake_fetch(request, timeout):
+        page = int(request.full_url.rsplit("/search/", 1)[1].split("?")[0])
+        requested_pages.append(page)
+        # A full page (50) on page 1, a partial page on page 2 -- exactly reaching the limit.
+        count = 50 if page == 1 else 10
+        return FakeResponse(_adzuna_page_payload(count, page))
+
+    scraper = AdzunaScraper(app_id="id", app_key="key", fetch=fake_fetch)
+
+    results = scraper.search(SearchCriteria(role="Engineer", limit=60))
+
+    assert requested_pages == [1, 2]
+    assert len(results) == 60
+
+
+def test_adzuna_scraper_stops_early_on_a_short_page():
+    requested_pages = []
+
+    def fake_fetch(request, timeout):
+        page = int(request.full_url.rsplit("/search/", 1)[1].split("?")[0])
+        requested_pages.append(page)
+        return FakeResponse(_adzuna_page_payload(5, page))  # short page, well under 50
+
+    scraper = AdzunaScraper(app_id="id", app_key="key", fetch=fake_fetch)
+
+    results = scraper.search(SearchCriteria(role="Engineer", limit=200))
+
+    assert requested_pages == [1]  # never asked for page 2 since page 1 was already short
+    assert len(results) == 5
+
+
 def test_adzuna_scraper_logs_and_fails_closed_on_provider_errors(caplog):
     scraper = AdzunaScraper(
         app_id="id", app_key="key", fetch=lambda request, timeout: (_ for _ in ()).throw(OSError("boom"))

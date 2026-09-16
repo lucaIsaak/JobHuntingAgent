@@ -14,6 +14,9 @@ from jobhunter.scrapers.catalog import build_search_query
 
 logger = logging.getLogger(__name__)
 
+RESULTS_PER_PAGE = 20  # Jooble's own fixed page size (no per-page size parameter exists)
+MAX_PAGES = 5  # safety/politeness cap: at most 100 postings per search regardless of criteria.limit
+
 
 class JoobleScraper(Scraper):
     sources = ("jooble",)
@@ -36,12 +39,22 @@ class JoobleScraper(Scraper):
         return self._search(build_search_query(profile, criteria), criteria)
 
     def _search(self, search_term: str, criteria: SearchCriteria) -> Sequence[JobPosting]:
+        pages_needed = min(-(-criteria.limit // RESULTS_PER_PAGE), MAX_PAGES)  # ceil division
+        jobs: list[JobPosting] = []
+        for page in range(1, max(pages_needed, 1) + 1):
+            page_jobs = self._search_page(search_term, criteria, page)
+            jobs.extend(page_jobs)
+            if len(page_jobs) < RESULTS_PER_PAGE:
+                break  # short page means there's nothing more to fetch
+        return jobs
+
+    def _search_page(self, search_term: str, criteria: SearchCriteria, page: int) -> list[JobPosting]:
         # Jooble's API requires the query under "keywords" — "search" is silently rejected with
         # HTTP 400 (confirmed against the live endpoint), so this field name is load-bearing.
         payload = json.dumps({
             "keywords": search_term,
             "location": criteria.location or "",
-            "page": 1,
+            "page": page,
         }).encode()
         request = Request(
             f"{self._endpoint}/{self._api_key}",
@@ -53,7 +66,7 @@ class JoobleScraper(Scraper):
             with self._fetch(request, timeout=5) as response:
                 result = json.load(response)
         except (OSError, ValueError, TimeoutError) as exc:
-            logger.warning("jooble: search failed: %s", exc)
+            logger.warning("jooble: search failed on page %s: %s", page, exc)
             return []
 
         jobs = []

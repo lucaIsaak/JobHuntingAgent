@@ -21,12 +21,10 @@ GREENHOUSE_COMPANIES: tuple[GreenhouseCompany, ...] = (
     GreenhouseCompany("Airbnb", "airbnb", ("marketplace_delivery", "technology", "design")),
     GreenhouseCompany("Stripe", "stripe", ("fintech", "developer_tools", "technology")),
     GreenhouseCompany("Anthropic", "anthropic", ("ai_ml", "technology")),
-    GreenhouseCompany("Notion", "notion", ("productivity_saas", "design", "technology")),
-    GreenhouseCompany("Linear", "linear", ("developer_tools", "productivity_saas", "technology")),
     GreenhouseCompany("Vercel", "vercel", ("developer_tools", "technology")),
     GreenhouseCompany("Figma", "figma", ("design", "productivity_saas", "technology")),
     GreenhouseCompany("Instacart", "instacart", ("marketplace_delivery", "technology")),
-    GreenhouseCompany("DoorDash", "doordash", ("marketplace_delivery", "technology")),
+    GreenhouseCompany("Faire", "faire", ("marketplace_delivery", "technology")),
     GreenhouseCompany("Asana", "asana", ("productivity_saas", "technology")),
     GreenhouseCompany("Brex", "brex", ("fintech", "technology")),
     GreenhouseCompany("Ramp", "ramp", ("fintech", "technology")),
@@ -43,6 +41,10 @@ GREENHOUSE_COMPANIES: tuple[GreenhouseCompany, ...] = (
     GreenhouseCompany("Perplexity", "perplexity", ("ai_ml", "technology")),
     GreenhouseCompany("Hugging Face", "huggingface", ("ai_ml", "developer_tools", "technology")),
     GreenhouseCompany("OpenAI", "openai", ("ai_ml", "technology")),
+    GreenhouseCompany("ThoughtWorks", "thoughtworks", ("consulting", "technology")),
+    GreenhouseCompany("SoFi", "sofi", ("finance", "fintech", "technology")),
+    GreenhouseCompany("Oscar Health", "oscar", ("healthcare", "technology")),
+    GreenhouseCompany("Braze", "braze", ("marketing", "technology")),
 )
 
 

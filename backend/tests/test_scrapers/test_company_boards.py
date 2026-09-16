@@ -18,6 +18,9 @@ def test_company_boards_use_candidate_industry(monkeypatch):
     CompanyBoardScraper(
         {"consulting": ["consulting-board"]},
         {"consulting": ["consulting-site"]},
+        catalog=(),  # isolate from the real built-in catalog, which may itself contribute
+        # real "consulting"-tagged boards — this test only checks that the configured
+        # per-industry boards get used, not what the catalog happens to contain.
     ).search_for_profile(
         CandidateProfile(
             profile_id="p1",

@@ -36,6 +36,55 @@ def test_bundesagentur_scraper_normalizes_v6_jobs():
     assert results[0].is_remote is True
 
 
+def _bundesagentur_page_payload(count: int, page: int) -> dict:
+    return {
+        "ergebnisliste": [
+            {
+                "stellenangebotsTitel": f"Job {page}-{i}",
+                "arbeitgeber": "Example GmbH",
+                "referenznummer": f"1000{page}-{i}-S",
+                "externeUrl": f"https://example.com/job/{page}/{i}",
+                "stellenlokationen": [{"adresse": {"ort": "Berlin"}}],
+            }
+            for i in range(count)
+        ]
+    }
+
+
+def test_bundesagentur_scraper_fetches_additional_pages_to_reach_the_limit():
+    requested = []
+
+    def fake_fetch(request, timeout):
+        query = dict(pair.split("=") for pair in request.full_url.split("?", 1)[1].split("&"))
+        page = int(query["page"])
+        requested.append(page)
+        count = 100 if page == 1 else 30
+        return FakeResponse(_bundesagentur_page_payload(count, page))
+
+    scraper = BundesagenturScraper(fetch=fake_fetch)
+
+    results = scraper.search(SearchCriteria(role="Software Engineer", limit=130))
+
+    assert requested == [1, 2]
+    assert len(results) == 130
+
+
+def test_bundesagentur_scraper_stops_early_on_a_short_page():
+    requested = []
+
+    def fake_fetch(request, timeout):
+        query = dict(pair.split("=") for pair in request.full_url.split("?", 1)[1].split("&"))
+        requested.append(int(query["page"]))
+        return FakeResponse(_bundesagentur_page_payload(5, 1))  # short page, well under 100
+
+    scraper = BundesagenturScraper(fetch=fake_fetch)
+
+    results = scraper.search(SearchCriteria(role="Software Engineer", limit=200))
+
+    assert requested == [1]
+    assert len(results) == 5
+
+
 def test_bundesagentur_scraper_logs_and_fails_closed_on_provider_errors(caplog):
     scraper = BundesagenturScraper(fetch=lambda request, timeout: (_ for _ in ()).throw(OSError("boom")))
 

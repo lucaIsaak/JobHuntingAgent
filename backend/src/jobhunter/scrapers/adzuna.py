@@ -18,6 +18,8 @@ from jobhunter.scrapers.catalog import build_search_query
 logger = logging.getLogger(__name__)
 
 ADZUNA_API_URL = "https://api.adzuna.com/v1/api"
+RESULTS_PER_PAGE = 50  # Adzuna's own per-page maximum
+MAX_PAGES = 5  # safety/politeness cap: at most 250 postings per search regardless of criteria.limit
 
 
 def _plain_text(value: str) -> str:
@@ -64,24 +66,34 @@ class AdzunaScraper(Scraper):
         return self._search(build_search_query(profile, criteria), criteria)
 
     def _search(self, what: str, criteria: SearchCriteria) -> Sequence[JobPosting]:
+        pages_needed = min(-(-criteria.limit // RESULTS_PER_PAGE), MAX_PAGES)  # ceil division
+        postings: list[JobPosting] = []
+        for page in range(1, max(pages_needed, 1) + 1):
+            page_postings = self._search_page(what, criteria, page)
+            postings.extend(page_postings)
+            if len(page_postings) < RESULTS_PER_PAGE:
+                break  # short page means there's nothing more to fetch
+        return postings
+
+    def _search_page(self, what: str, criteria: SearchCriteria, page: int) -> list[JobPosting]:
         query = {
             "app_id": self._app_id,
             "app_key": self._app_key,
-            "results_per_page": min(criteria.limit, 50),
+            "results_per_page": RESULTS_PER_PAGE,
             "what": what,
         }
         if criteria.location:
             query["where"] = criteria.location
 
         request = Request(
-            f"{self._endpoint}/jobs/{self._country}/search/1?{urlencode(query)}",
+            f"{self._endpoint}/jobs/{self._country}/search/{page}?{urlencode(query)}",
             headers={"Accept": "application/json", "User-Agent": "JobHunter/0.1"},
         )
         try:
             with self._fetch(request, timeout=self._timeout) as response:
                 payload = load(response)
         except (OSError, ValueError, TimeoutError) as exc:
-            logger.warning("adzuna: search failed: %s", exc)
+            logger.warning("adzuna: search failed on page %s: %s", page, exc)
             return []
 
         results = payload.get("results", []) if isinstance(payload, dict) else []
