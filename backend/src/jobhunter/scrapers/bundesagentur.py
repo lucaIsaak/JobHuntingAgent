@@ -10,8 +10,9 @@ from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 from jobhunter.models.job import EmploymentType, JobPosting
-from jobhunter.models.search_criteria import SearchCriteria
+from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
 from jobhunter.scrapers.base import Scraper
+from jobhunter.scrapers.catalog import build_search_query
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +40,20 @@ class BundesagenturScraper(Scraper):
         self._fetch = fetch
 
     def search(self, criteria: SearchCriteria) -> Sequence[JobPosting]:
+        return self._search(criteria.role or " ".join(criteria.keywords), criteria)
+
+    def search_for_profile(
+        self, profile: CandidateProfile, criteria: SearchCriteria
+    ) -> Sequence[JobPosting]:
+        return self._search(build_search_query(profile, criteria), criteria)
+
+    def _search(self, was: str, criteria: SearchCriteria) -> Sequence[JobPosting]:
         params = {
-            "was": criteria.role or " ".join(criteria.keywords),
+            "was": was,
             "page": "1",
             "size": str(min(criteria.limit, 100)),
         }
+        # The API 400s on an empty "wo" param — only send it when a location is actually given.
         if criteria.location:
             params["wo"] = criteria.location
         request = Request(

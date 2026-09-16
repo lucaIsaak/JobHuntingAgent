@@ -5,10 +5,35 @@ from fastapi.testclient import TestClient
 
 from jobhunter.api import routes
 from jobhunter.main import app
+from jobhunter.models.job import EmploymentType, JobPosting
+from jobhunter.scrapers.base import Scraper
 from jobhunter.storage.repository import SourceHealth
 
 
 client = TestClient(app)
+
+
+class _StubScraper(Scraper):
+    """Offline, deterministic source used only so search tests don't depend on the network."""
+
+    sources = ("stub",)
+
+    def search(self, criteria):
+        return [
+            JobPosting(
+                source="stub",
+                title="Software Engineer, Platform",
+                company="Brightside Labs",
+                location="Hamburg",
+                is_remote=True,
+                employment_type=EmploymentType.CONTRACT,
+                description="Ship reliable backend systems with FastAPI and AWS.",
+                url="https://example.com/jobs/stub-1",
+            ),
+        ]
+
+
+routes.orchestrator._scrapers.append(_StubScraper())
 
 
 def test_real_public_api_sources_are_enabled_by_default():
@@ -90,7 +115,7 @@ def test_upload_file_and_search_flow():
             "remote_only": True,
             "employment_types": ["contract"],
             "limit": 10,
-            "sources": ["glassdoor"],
+            "sources": ["stub"],
         },
     }
 
@@ -102,6 +127,22 @@ def test_upload_file_and_search_flow():
     get_response = client.get(f"/api/searches/{body['run_id']}")
     assert get_response.status_code == 200
     assert get_response.json()["run_id"] == body["run_id"]
+
+
+def test_search_imports_discovered_postings_into_the_matching_jobs_database():
+    from jobhunter.jobs.from_posting import _job_id_for_url
+
+    response = client.post(
+        "/api/searches",
+        json={"criteria": {"role": "engineer", "limit": 10, "sources": ["stub"]}},
+    )
+    assert response.status_code == 200
+
+    job_id = _job_id_for_url("https://example.com/jobs/stub-1")
+    imported = routes.live_jobs_repository.get_job(job_id)
+    assert imported is not None
+    assert imported.title == "Software Engineer, Platform"
+    assert imported.remote_type == "remote"
 
 
 def test_upload_file_rejects_unsupported_extension():
@@ -133,32 +174,32 @@ def test_search_without_profile_id_uses_role_only():
     response = client.post(
         "/api/searches",
         json={
-            "criteria": {"role": "Engineer", "sources": ["glassdoor"], "limit": 20},
+            "criteria": {"role": "Engineer", "sources": ["stub"], "limit": 20},
         },
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body["profile_id"]
-    assert {result["job"]["source"] for result in body["results"]} == {"glassdoor"}
+    assert {result["job"]["source"] for result in body["results"]} == {"stub"}
 
 
 def test_search_reports_per_source_status():
     response = client.post(
         "/api/searches",
-        json={"criteria": {"role": "Engineer", "sources": ["glassdoor"], "limit": 20}},
+        json={"criteria": {"role": "Engineer", "sources": ["stub"], "limit": 20}},
     )
 
     assert response.status_code == 200
     source_status = {item["source"]: item for item in response.json()["source_status"]}
-    assert source_status["glassdoor"]["status"] == "ok"
-    assert source_status["glassdoor"]["count"] >= 1
+    assert source_status["stub"]["status"] == "ok"
+    assert source_status["stub"]["count"] >= 1
 
 
 def test_search_requires_role():
     response = client.post(
         "/api/searches",
-        json={"criteria": {"sources": ["glassdoor"], "limit": 20}},
+        json={"criteria": {"sources": ["stub"], "limit": 20}},
     )
 
     assert response.status_code == 422
@@ -174,12 +215,12 @@ def test_search_can_limit_sources():
         "/api/searches",
         json={
             "profile_id": upload_response.json()["profile_id"],
-            "criteria": {"role": "Engineer", "sources": ["glassdoor"], "limit": 20},
+            "criteria": {"role": "Engineer", "sources": ["stub"], "limit": 20},
         },
     )
 
     assert response.status_code == 200
-    assert {result["job"]["source"] for result in response.json()["results"]} == {"glassdoor"}
+    assert {result["job"]["source"] for result in response.json()["results"]} == {"stub"}
 
 
 def test_source_health_endpoint_lists_findings(tmp_path):

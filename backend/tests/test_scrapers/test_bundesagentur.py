@@ -45,3 +45,19 @@ def test_bundesagentur_scraper_logs_and_fails_closed_on_provider_errors(caplog):
     assert results == []
     assert "bundesagentur" in caplog.text
     assert "boom" in caplog.text
+
+
+def test_bundesagentur_scraper_omits_empty_location_param():
+    # The live API returns HTTP 400 when "wo" is present but empty — verified against the real
+    # endpoint. criteria.location=None must not send "wo=" at all, only omit the param.
+    captured_urls = []
+
+    def fake_fetch(request, timeout):
+        captured_urls.append(request.full_url)
+        return FakeResponse({"ergebnisliste": []})
+
+    scraper = BundesagenturScraper(fetch=fake_fetch)
+    scraper.search(SearchCriteria(role="Software Engineer"))
+
+    assert len(captured_urls) == 1
+    assert "wo=" not in captured_urls[0]
