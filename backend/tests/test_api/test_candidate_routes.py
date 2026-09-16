@@ -1,3 +1,5 @@
+import sqlite3
+
 from fastapi.testclient import TestClient
 
 from jobhunter.api import candidate_routes, routes
@@ -175,6 +177,18 @@ def test_unified_search_without_profile_uses_keyword_ranking_and_stores_postings
 
     job_id = _job_id_for_url("https://example.com/jobs/unified-1")
     assert candidate_routes.jobs_repository.get_job(job_id) is not None
+
+    # The run and its raw postings should also be recorded for the discovered-jobs audit log.
+    run_id = body["run_id"]
+    stored_run = routes.repository.get_search_run(run_id)
+    assert stored_run is not None
+    assert stored_run.run_id == run_id
+
+    with sqlite3.connect(routes.repository._database_path) as conn:
+        discovered_count = conn.execute(
+            "SELECT COUNT(*) FROM discovered_jobs WHERE run_id = ?", (run_id,)
+        ).fetchone()[0]
+    assert discovered_count == 1
 
 
 def test_unified_search_with_profile_uses_matching_engine(monkeypatch):

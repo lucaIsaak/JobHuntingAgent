@@ -218,6 +218,21 @@ def unified_search(payload: UnifiedSearchRequest) -> UnifiedSearchResponse:
             )
         )
 
+    try:
+        # results is a matching.schema.MatchResult list (already saved via match_repository above),
+        # not the legacy models.job.MatchResult StoredSearchRun.results expects — leave it empty here.
+        routes.repository.save_search_run(
+            routes.StoredSearchRun(
+                run_id=run_id,
+                profile_id=scraper_profile.profile_id,
+                criteria=criteria,
+                results=[],
+            )
+        )
+        routes.repository.save_discovered_jobs(run_id, postings)
+    except Exception:
+        logger.exception("failed to persist discovered jobs for run %s", run_id)
+
     return UnifiedSearchResponse(
         run_id=run_id,
         used_profile=rich_profile is not None,
