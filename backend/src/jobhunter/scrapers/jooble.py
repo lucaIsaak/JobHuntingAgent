@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Callable, Sequence
 from urllib.request import Request, urlopen
 
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
+
+logger = logging.getLogger(__name__)
 
 
 class JoobleScraper(Scraper):
@@ -25,7 +28,7 @@ class JoobleScraper(Scraper):
 
     def search(self, criteria: SearchCriteria) -> Sequence[JobPosting]:
         payload = json.dumps({
-            "search": criteria.role or " ".join(criteria.keywords),
+            "keywords": criteria.role or " ".join(criteria.keywords),
             "location": criteria.location or "",
             "page": 1,
         }).encode()
@@ -38,7 +41,8 @@ class JoobleScraper(Scraper):
         try:
             with self._fetch(request, timeout=5) as response:
                 result = json.load(response)
-        except (OSError, ValueError, TimeoutError):
+        except (OSError, ValueError, TimeoutError) as exc:
+            logger.warning("jooble: search failed: %s", exc)
             return []
 
         jobs = []

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import json
+import logging
 import re
 from collections.abc import Callable, Sequence
 from urllib.error import URLError
@@ -12,6 +13,8 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
+
+logger = logging.getLogger(__name__)
 
 ARBEITNOW_URL = "https://www.arbeitnow.com/api/job-board-api"
 
@@ -77,7 +80,8 @@ class ArbeitnowScraper(Scraper):
         try:
             with self._fetch(request, timeout=self._timeout) as response:
                 payload = json.load(response)
-        except (OSError, URLError, ValueError, TimeoutError):
+        except (OSError, URLError, ValueError, TimeoutError) as exc:
+            logger.warning("arbeitnow: search failed: %s", exc)
             return []
 
         items = payload.get("data", []) if isinstance(payload, dict) else []

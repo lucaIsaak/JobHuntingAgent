@@ -20,6 +20,24 @@ class StoredSearchRun:
     results: Sequence[MatchResult]
 
 
+@dataclass
+class SourceHealth:
+    """Latest health-check finding for one job source."""
+
+    source: str
+    status: str  # ok | no_results | error
+    discovered_count: int
+    checked_at: str
+    http_status: int | None = None
+    error_detail: str | None = None
+    diagnosis: str | None = None
+    proposed_fix_content: str | None = None
+    fix_file_path: str | None = None
+    fix_status: str = "none"  # none | proposed | applied | dismissed
+    try_status: str = "none"  # none | worked | failed
+    try_detail: str | None = None
+
+
 class Repository(Protocol):
     def save_profile(self, profile: CandidateProfile) -> None: ...
 
@@ -31,6 +49,14 @@ class Repository(Protocol):
 
     def save_discovered_jobs(self, run_id: str, postings: Sequence[JobPosting]) -> None: ...
 
+    def save_source_health(self, finding: SourceHealth) -> None: ...
+
+    def get_all_source_health(self) -> list[SourceHealth]: ...
+
+    def update_fix_status(self, source: str, fix_status: str) -> None: ...
+
+    def update_try_result(self, source: str, try_status: str, try_detail: str | None) -> None: ...
+
 
 class InMemoryRepository:
     """Simple in-memory repository used by the MVP."""
@@ -39,6 +65,7 @@ class InMemoryRepository:
         self._profiles: dict[str, CandidateProfile] = {}
         self._search_runs: dict[str, StoredSearchRun] = {}
         self._discovered_jobs: list[tuple[str, JobPosting]] = []
+        self._source_health: dict[str, SourceHealth] = {}
 
     def save_profile(self, profile: CandidateProfile) -> None:
         self._profiles[profile.profile_id] = profile
@@ -54,6 +81,21 @@ class InMemoryRepository:
 
     def save_discovered_jobs(self, run_id: str, postings: Sequence[JobPosting]) -> None:
         self._discovered_jobs.extend((run_id, posting) for posting in postings)
+
+    def save_source_health(self, finding: SourceHealth) -> None:
+        self._source_health[finding.source] = finding
+
+    def get_all_source_health(self) -> list[SourceHealth]:
+        return list(self._source_health.values())
+
+    def update_fix_status(self, source: str, fix_status: str) -> None:
+        if source in self._source_health:
+            self._source_health[source].fix_status = fix_status
+
+    def update_try_result(self, source: str, try_status: str, try_detail: str | None) -> None:
+        if source in self._source_health:
+            self._source_health[source].try_status = try_status
+            self._source_health[source].try_detail = try_detail
 
 
 class SQLiteRepository:
@@ -129,6 +171,32 @@ class SQLiteRepository:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS source_health (
+                    source TEXT PRIMARY KEY,
+                    status TEXT NOT NULL,
+                    discovered_count INTEGER NOT NULL,
+                    checked_at TEXT NOT NULL,
+                    http_status INTEGER,
+                    error_detail TEXT,
+                    diagnosis TEXT,
+                    proposed_fix_content TEXT,
+                    fix_file_path TEXT,
+                    fix_status TEXT NOT NULL DEFAULT 'none',
+                    try_status TEXT NOT NULL DEFAULT 'none',
+                    try_detail TEXT
+                )
+                """
+            )
+            try:
+                conn.execute("ALTER TABLE source_health ADD COLUMN try_status TEXT NOT NULL DEFAULT 'none'")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE source_health ADD COLUMN try_detail TEXT")
+            except sqlite3.OperationalError:
+                pass
 
     def save_profile(self, profile: CandidateProfile) -> None:
         with self._connect() as conn:
@@ -242,4 +310,84 @@ class SQLiteRepository:
                     )
                     for posting in postings
                 ],
+            )
+
+    def save_source_health(self, finding: SourceHealth) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO source_health
+                (source, status, discovered_count, checked_at, http_status, error_detail,
+                 diagnosis, proposed_fix_content, fix_file_path, fix_status, try_status, try_detail)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(source) DO UPDATE SET
+                    status=excluded.status,
+                    discovered_count=excluded.discovered_count,
+                    checked_at=excluded.checked_at,
+                    http_status=excluded.http_status,
+                    error_detail=excluded.error_detail,
+                    diagnosis=excluded.diagnosis,
+                    proposed_fix_content=excluded.proposed_fix_content,
+                    fix_file_path=excluded.fix_file_path,
+                    fix_status=excluded.fix_status,
+                    try_status=excluded.try_status,
+                    try_detail=excluded.try_detail
+                """,
+                (
+                    finding.source,
+                    finding.status,
+                    finding.discovered_count,
+                    finding.checked_at,
+                    finding.http_status,
+                    finding.error_detail,
+                    finding.diagnosis,
+                    finding.proposed_fix_content,
+                    finding.fix_file_path,
+                    finding.fix_status,
+                    finding.try_status,
+                    finding.try_detail,
+                ),
+            )
+
+    def get_all_source_health(self) -> list[SourceHealth]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT source, status, discovered_count, checked_at, http_status, error_detail,
+                       diagnosis, proposed_fix_content, fix_file_path, fix_status, try_status, try_detail
+                FROM source_health
+                ORDER BY source
+                """
+            ).fetchall()
+
+        return [
+            SourceHealth(
+                source=row[0],
+                status=row[1],
+                discovered_count=row[2],
+                checked_at=row[3],
+                http_status=row[4],
+                error_detail=row[5],
+                diagnosis=row[6],
+                proposed_fix_content=row[7],
+                fix_file_path=row[8],
+                fix_status=row[9],
+                try_status=row[10],
+                try_detail=row[11],
+            )
+            for row in rows
+        ]
+
+    def update_fix_status(self, source: str, fix_status: str) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE source_health SET fix_status = ? WHERE source = ?",
+                (fix_status, source),
+            )
+
+    def update_try_result(self, source: str, try_status: str, try_detail: str | None) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE source_health SET try_status = ?, try_detail = ? WHERE source = ?",
+                (try_status, try_detail, source),
             )

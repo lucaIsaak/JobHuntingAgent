@@ -1,11 +1,14 @@
 """HTTP routes the frontend calls (trigger search, fetch results, etc.)."""
 
+import difflib
 import logging
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
+from jobhunter.agent import health_monitor
 from jobhunter.agent.orchestrator import JobSearchOrchestrator
 from jobhunter.config import settings
 from jobhunter.models.job import MatchResult
@@ -77,11 +80,18 @@ class SearchRequest(BaseModel):
     criteria: SearchCriteria
 
 
+class SourceStatus(BaseModel):
+    source: str
+    status: str  # "ok" | "no_results" — see note on run_search for why "error" isn't distinguished here
+    count: int
+
+
 class SearchResponse(BaseModel):
     run_id: str
     profile_id: str
     criteria: SearchCriteria
     results: list[MatchResult]
+    source_status: list[SourceStatus] = Field(default_factory=list)
 
 
 def _store_profile(cv_text: str, preferred_locations: list[str]) -> UploadCvResponse:
@@ -178,11 +188,27 @@ def run_search(payload: SearchRequest) -> SearchResponse:
     except Exception:
         logger.exception("failed to persist discovered jobs for run %s", run_id)
 
+    source_status = [
+        SourceStatus(source=source, status="ok" if count > 0 else "no_results", count=count)
+        for source, count in sorted(outcome.source_counts.items())
+    ]
+    empty_sources = [status.source for status in source_status if status.status == "no_results"]
+    if empty_sources:
+        logger.warning(
+            "search run %s: %d of %d source(s) returned nothing (%s) — check the source's own "
+            "log lines above for the actual failure reason, if any",
+            run_id,
+            len(empty_sources),
+            len(source_status),
+            ", ".join(empty_sources),
+        )
+
     return SearchResponse(
         run_id=run_id,
         profile_id=profile.profile_id,
         criteria=payload.criteria,
         results=list(outcome.results),
+        source_status=source_status,
     )
 
 
@@ -198,3 +224,91 @@ def get_search(run_id: str) -> SearchResponse:
         criteria=search_run.criteria,
         results=list(search_run.results),
     )
+
+
+class SourceHealthResponse(BaseModel):
+    source: str
+    status: str
+    discovered_count: int
+    checked_at: str
+    http_status: int | None = None
+    error_detail: str | None = None
+    diagnosis: str | None = None
+    fix_status: str = "none"
+    diff_preview: str | None = None
+    try_status: str = "none"
+    try_detail: str | None = None
+
+
+def _diff_preview(finding) -> str | None:
+    if not finding.proposed_fix_content or not finding.fix_file_path:
+        return None
+    try:
+        current = Path(finding.fix_file_path).read_text()
+    except OSError:
+        return None
+    diff = difflib.unified_diff(
+        current.splitlines(keepends=True),
+        finding.proposed_fix_content.splitlines(keepends=True),
+        fromfile=f"{finding.source} (current)",
+        tofile=f"{finding.source} (proposed)",
+    )
+    return "".join(diff)
+
+
+@router.get("/health/sources", response_model=list[SourceHealthResponse])
+def get_source_health() -> list[SourceHealthResponse]:
+    return [
+        SourceHealthResponse(
+            source=finding.source,
+            status=finding.status,
+            discovered_count=finding.discovered_count,
+            checked_at=finding.checked_at,
+            http_status=finding.http_status,
+            error_detail=finding.error_detail,
+            diagnosis=finding.diagnosis,
+            fix_status=finding.fix_status,
+            diff_preview=_diff_preview(finding) if finding.fix_status == "proposed" else None,
+            try_status=finding.try_status,
+            try_detail=finding.try_detail,
+        )
+        for finding in repository.get_all_source_health()
+    ]
+
+
+@router.post("/health/sources/{source}/try-fix")
+def try_source_fix(source: str) -> dict[str, str]:
+    findings = {finding.source: finding for finding in repository.get_all_source_health()}
+    finding = findings.get(source)
+    if not finding or finding.fix_status != "proposed" or not finding.proposed_fix_content:
+        raise HTTPException(status_code=400, detail="no pending fix for this source")
+
+    try:
+        try_status, try_detail = health_monitor.try_fix(source, finding, scrapers)
+    except health_monitor.TryFixError as exc:
+        try_status, try_detail = "failed", str(exc)
+
+    repository.update_try_result(source, try_status, try_detail)
+    return {"try_status": try_status, "try_detail": try_detail}
+
+
+@router.post("/health/sources/{source}/apply-fix")
+def apply_source_fix(source: str) -> dict[str, str]:
+    findings = {finding.source: finding for finding in repository.get_all_source_health()}
+    finding = findings.get(source)
+    if not finding or finding.fix_status != "proposed" or not finding.proposed_fix_content:
+        raise HTTPException(status_code=400, detail="no pending fix for this source")
+
+    try:
+        Path(finding.fix_file_path).write_text(finding.proposed_fix_content)
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail=f"could not write fix: {exc}") from exc
+
+    repository.update_fix_status(source, "applied")
+    return {"status": "applied"}
+
+
+@router.post("/health/sources/{source}/dismiss-fix")
+def dismiss_source_fix(source: str) -> dict[str, str]:
+    repository.update_fix_status(source, "dismissed")
+    return {"status": "dismissed"}

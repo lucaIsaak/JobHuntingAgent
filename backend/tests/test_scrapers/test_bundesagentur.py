@@ -34,3 +34,14 @@ def test_bundesagentur_scraper_normalizes_v6_jobs():
     assert results[0].source == "bundesagentur"
     assert results[0].company == "Example GmbH"
     assert results[0].is_remote is True
+
+
+def test_bundesagentur_scraper_logs_and_fails_closed_on_provider_errors(caplog):
+    scraper = BundesagenturScraper(fetch=lambda request, timeout: (_ for _ in ()).throw(OSError("boom")))
+
+    with caplog.at_level("WARNING"):
+        results = scraper.search(SearchCriteria(role="Engineer"))
+
+    assert results == []
+    assert "bundesagentur" in caplog.text
+    assert "boom" in caplog.text

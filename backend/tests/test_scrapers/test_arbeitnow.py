@@ -43,7 +43,12 @@ def test_arbeitnow_scraper_normalizes_and_filters_jobs():
     assert results[0].is_remote is True
 
 
-def test_arbeitnow_scraper_fails_closed_on_provider_errors():
-    scraper = ArbeitnowScraper(fetch=lambda request, timeout: (_ for _ in ()).throw(OSError()))
+def test_arbeitnow_scraper_fails_closed_on_provider_errors(caplog):
+    scraper = ArbeitnowScraper(fetch=lambda request, timeout: (_ for _ in ()).throw(OSError("boom")))
 
-    assert scraper.search(SearchCriteria(role="Engineer")) == []
+    with caplog.at_level("WARNING"):
+        results = scraper.search(SearchCriteria(role="Engineer"))
+
+    assert results == []
+    assert "arbeitnow" in caplog.text
+    assert "boom" in caplog.text

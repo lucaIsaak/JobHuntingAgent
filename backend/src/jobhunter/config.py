@@ -40,6 +40,9 @@ class Settings:
         default_factory=lambda: _json_mapping("LEVER_SITES_JSON")
     )
     greenhouse_catalog_top_n: int = int(os.getenv("GREENHOUSE_CATALOG_TOP_N", "5"))
+    anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
+    health_check_model: str = os.getenv("HEALTH_CHECK_MODEL", "claude-sonnet-5")
+    health_check_interval_seconds: int = int(os.getenv("HEALTH_CHECK_INTERVAL_SECONDS", "1800"))
 
 
 settings = Settings()

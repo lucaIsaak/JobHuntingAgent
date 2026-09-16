@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from jobhunter.api import routes
 from jobhunter.main import app
+from jobhunter.storage.repository import SourceHealth
 
 
 client = TestClient(app)
@@ -142,6 +143,18 @@ def test_search_without_profile_id_uses_role_only():
     assert {result["job"]["source"] for result in body["results"]} == {"glassdoor"}
 
 
+def test_search_reports_per_source_status():
+    response = client.post(
+        "/api/searches",
+        json={"criteria": {"role": "Engineer", "sources": ["glassdoor"], "limit": 20}},
+    )
+
+    assert response.status_code == 200
+    source_status = {item["source"]: item for item in response.json()["source_status"]}
+    assert source_status["glassdoor"]["status"] == "ok"
+    assert source_status["glassdoor"]["count"] >= 1
+
+
 def test_search_requires_role():
     response = client.post(
         "/api/searches",
@@ -167,3 +180,121 @@ def test_search_can_limit_sources():
 
     assert response.status_code == 200
     assert {result["job"]["source"] for result in response.json()["results"]} == {"glassdoor"}
+
+
+def test_source_health_endpoint_lists_findings(tmp_path):
+    fix_file = tmp_path / "jooble.py"
+    fix_file.write_text("original\n")
+    routes.repository.save_source_health(
+        SourceHealth(
+            source="jooble-test",
+            status="error",
+            discovered_count=0,
+            checked_at="2026-09-09T12:00:00+00:00",
+            http_status=400,
+            error_detail="HTTP 400: bad request",
+            diagnosis="Wrong field name.",
+            proposed_fix_content="fixed\n",
+            fix_file_path=str(fix_file),
+            fix_status="proposed",
+        )
+    )
+
+    response = client.get("/api/health/sources")
+    assert response.status_code == 200
+    findings = {item["source"]: item for item in response.json()}
+
+    assert findings["jooble-test"]["status"] == "error"
+    assert findings["jooble-test"]["fix_status"] == "proposed"
+    assert "-original" in findings["jooble-test"]["diff_preview"]
+    assert "+fixed" in findings["jooble-test"]["diff_preview"]
+
+
+def test_try_source_fix_calls_health_monitor_and_persists_result(monkeypatch):
+    routes.repository.save_source_health(
+        SourceHealth(
+            source="try-test",
+            status="error",
+            discovered_count=0,
+            checked_at="2026-09-09T12:00:00+00:00",
+            proposed_fix_content="fixed content\n",
+            fix_file_path="/tmp/try-test.py",
+            fix_status="proposed",
+        )
+    )
+
+    monkeypatch.setattr(routes.health_monitor, "try_fix", lambda source, finding, scrapers: ("worked", "3 jobs found."))
+
+    response = client.post("/api/health/sources/try-test/try-fix")
+    assert response.status_code == 200
+    assert response.json() == {"try_status": "worked", "try_detail": "3 jobs found."}
+
+    findings = {item["source"]: item for item in client.get("/api/health/sources").json()}
+    assert findings["try-test"]["try_status"] == "worked"
+    assert findings["try-test"]["try_detail"] == "3 jobs found."
+
+
+def test_try_source_fix_without_pending_fix_returns_400():
+    routes.repository.save_source_health(
+        SourceHealth(source="no-fix-test", status="ok", discovered_count=5, checked_at="2026-09-09T12:00:00+00:00")
+    )
+
+    response = client.post("/api/health/sources/no-fix-test/try-fix")
+    assert response.status_code == 400
+
+
+def test_apply_source_fix_writes_file_and_updates_status(tmp_path):
+    fix_file = tmp_path / "adzuna.py"
+    fix_file.write_text("original\n")
+    routes.repository.save_source_health(
+        SourceHealth(
+            source="adzuna-test",
+            status="error",
+            discovered_count=0,
+            checked_at="2026-09-09T12:00:00+00:00",
+            proposed_fix_content="fixed content\n",
+            fix_file_path=str(fix_file),
+            fix_status="proposed",
+        )
+    )
+
+    response = client.post("/api/health/sources/adzuna-test/apply-fix")
+    assert response.status_code == 200
+    assert fix_file.read_text() == "fixed content\n"
+
+    findings = {item["source"]: item for item in client.get("/api/health/sources").json()}
+    assert findings["adzuna-test"]["fix_status"] == "applied"
+
+
+def test_apply_source_fix_without_pending_fix_returns_400():
+    routes.repository.save_source_health(
+        SourceHealth(
+            source="healthy-test",
+            status="ok",
+            discovered_count=5,
+            checked_at="2026-09-09T12:00:00+00:00",
+        )
+    )
+
+    response = client.post("/api/health/sources/healthy-test/apply-fix")
+    assert response.status_code == 400
+
+
+def test_dismiss_source_fix_updates_status():
+    routes.repository.save_source_health(
+        SourceHealth(
+            source="bundesagentur-test",
+            status="error",
+            discovered_count=0,
+            checked_at="2026-09-09T12:00:00+00:00",
+            proposed_fix_content="fixed\n",
+            fix_file_path="/tmp/does-not-matter.py",
+            fix_status="proposed",
+        )
+    )
+
+    response = client.post("/api/health/sources/bundesagentur-test/dismiss-fix")
+    assert response.status_code == 200
+
+    findings = {item["source"]: item for item in client.get("/api/health/sources").json()}
+    assert findings["bundesagentur-test"]["fix_status"] == "dismissed"

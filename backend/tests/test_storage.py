@@ -1,6 +1,6 @@
 from jobhunter.models.job import EmploymentType, JobPosting, MatchResult
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria, SeniorityLevel
-from jobhunter.storage.repository import SQLiteRepository, StoredSearchRun
+from jobhunter.storage.repository import SourceHealth, SQLiteRepository, StoredSearchRun
 
 
 def test_sqlite_repository_persists_profiles_and_runs(tmp_path):
@@ -113,3 +113,47 @@ def test_sqlite_repository_persists_discovered_jobs(tmp_path):
         ("run-1", "arbeitnow", "Backend Engineer", "Berlin"),
         ("run-1", "bundesagentur", "Software Developer", "Munich"),
     ]
+
+
+def test_sqlite_repository_persists_and_updates_source_health(tmp_path):
+    db_path = tmp_path / "jobhunter-test.db"
+    repository = SQLiteRepository(str(db_path))
+
+    finding = SourceHealth(
+        source="jooble",
+        status="error",
+        discovered_count=0,
+        checked_at="2026-09-09T12:00:00+00:00",
+        http_status=400,
+        error_detail="HTTP 400: bad request",
+        diagnosis="Wrong field name in request body.",
+        proposed_fix_content="# fixed file content",
+        fix_file_path=str(tmp_path / "jooble.py"),
+        fix_status="proposed",
+    )
+    repository.save_source_health(finding)
+
+    stored = repository.get_all_source_health()
+    assert len(stored) == 1
+    assert stored[0].source == "jooble"
+    assert stored[0].status == "error"
+    assert stored[0].fix_status == "proposed"
+    assert stored[0].diagnosis == "Wrong field name in request body."
+
+    # Re-saving the same source (as a fresh check would) replaces the row rather than duplicating it.
+    repository.save_source_health(
+        SourceHealth(
+            source="jooble",
+            status="ok",
+            discovered_count=5,
+            checked_at="2026-09-09T12:30:00+00:00",
+        )
+    )
+    stored = repository.get_all_source_health()
+    assert len(stored) == 1
+    assert stored[0].status == "ok"
+    assert stored[0].discovered_count == 5
+
+    repository.update_fix_status("jooble", "dismissed")
+    stored = repository.get_all_source_health()
+    assert stored[0].fix_status == "dismissed"

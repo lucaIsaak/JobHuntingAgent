@@ -1,5 +1,5 @@
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
-from jobhunter.scrapers.company_boards import CompanyBoardScraper
+from jobhunter.scrapers.company_boards import CompanyBoardScraper, GreenhouseScraper, LeverScraper
 
 
 def test_company_boards_use_candidate_industry(monkeypatch):
@@ -28,3 +28,29 @@ def test_company_boards_use_candidate_industry(monkeypatch):
     )
 
     assert calls == [{"consulting-board"}, {"consulting-site"}]
+
+
+def test_greenhouse_scraper_logs_and_skips_board_on_provider_errors(caplog):
+    scraper = GreenhouseScraper(
+        ["broken-board"], fetch=lambda request, timeout: (_ for _ in ()).throw(OSError("boom"))
+    )
+
+    with caplog.at_level("WARNING"):
+        results = scraper.search(SearchCriteria(role="Engineer"))
+
+    assert results == []
+    assert "greenhouse" in caplog.text
+    assert "broken-board" in caplog.text
+    assert "boom" in caplog.text
+
+
+def test_lever_scraper_logs_and_skips_site_on_provider_errors(caplog):
+    scraper = LeverScraper(["broken-site"], fetch=lambda request, timeout: (_ for _ in ()).throw(OSError("boom")))
+
+    with caplog.at_level("WARNING"):
+        results = scraper.search(SearchCriteria(role="Engineer"))
+
+    assert results == []
+    assert "lever" in caplog.text
+    assert "broken-site" in caplog.text
+    assert "boom" in caplog.text

@@ -17,6 +17,7 @@ class SearchOutcome:
 
     results: list[MatchResult]
     raw_postings: list[JobPosting]
+    source_counts: dict[str, int]
 
 
 def _balance_by_source(ranked: list[MatchResult], limit: int) -> list[MatchResult]:
@@ -53,17 +54,25 @@ class JobSearchOrchestrator:
 
     def run_search(self, profile: CandidateProfile, criteria: SearchCriteria) -> SearchOutcome:
         postings = []
+        queried_sources: set[str] = set()
         for scraper in self._scrapers:
             scraper_sources = getattr(scraper, "sources", ())
             if criteria.sources and scraper_sources and not set(scraper_sources) & set(criteria.sources):
                 continue
+            queried_sources.update(scraper_sources)
             if hasattr(scraper, "search_for_profile"):
                 postings.extend(scraper.search_for_profile(profile, criteria))
             else:
                 postings.extend(scraper.search(criteria))
 
+        # Every source we actually queried starts at 0 so a source that came back
+        # completely empty (rather than just under-represented) is still visible.
+        source_counts = {source: 0 for source in queried_sources}
+        for posting in postings:
+            source_counts[posting.source] = source_counts.get(posting.source, 0) + 1
+
         unique_postings = deduplicate_postings(postings)
         filtered_postings = filter_postings(unique_postings, criteria)
         ranked = rank_jobs(profile=profile, criteria=criteria, postings=filtered_postings)
         results = _balance_by_source(ranked, criteria.limit)
-        return SearchOutcome(results=results, raw_postings=postings)
+        return SearchOutcome(results=results, raw_postings=postings, source_counts=source_counts)

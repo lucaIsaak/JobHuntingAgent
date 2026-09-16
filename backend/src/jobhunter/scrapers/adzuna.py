@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+import logging
 import re
 from collections.abc import Callable, Sequence
 from json import load
@@ -12,6 +13,8 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
+
+logger = logging.getLogger(__name__)
 
 ADZUNA_API_URL = "https://api.adzuna.com/v1/api"
 
@@ -68,7 +71,8 @@ class AdzunaScraper(Scraper):
         try:
             with self._fetch(request, timeout=self._timeout) as response:
                 payload = load(response)
-        except (OSError, ValueError, TimeoutError):
+        except (OSError, ValueError, TimeoutError) as exc:
+            logger.warning("adzuna: search failed: %s", exc)
             return []
 
         results = payload.get("results", []) if isinstance(payload, dict) else []

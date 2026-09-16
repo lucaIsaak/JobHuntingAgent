@@ -33,3 +33,14 @@ def test_jooble_scraper_normalizes_jobs():
     assert len(results) == 1
     assert results[0].source == "jooble"
     assert results[0].company == "Example"
+
+
+def test_jooble_scraper_logs_and_fails_closed_on_provider_errors(caplog):
+    scraper = JoobleScraper("key", fetch=lambda request, timeout: (_ for _ in ()).throw(OSError("boom")))
+
+    with caplog.at_level("WARNING"):
+        results = scraper.search(SearchCriteria(role="Engineer"))
+
+    assert results == []
+    assert "jooble" in caplog.text
+    assert "boom" in caplog.text

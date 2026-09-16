@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Callable, Sequence
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -10,6 +11,8 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
+
+logger = logging.getLogger(__name__)
 
 
 class ConfiguredJsonScraper(Scraper):
@@ -27,7 +30,8 @@ class ConfiguredJsonScraper(Scraper):
         try:
             with self._fetch(request, timeout=5) as response:
                 payload = json.load(response)
-        except (OSError, ValueError, TimeoutError):
+        except (OSError, ValueError, TimeoutError) as exc:
+            logger.warning("%s: search failed: %s", self._source, exc)
             return []
         items = payload.get("results", payload.get("jobs", payload.get("data", []))) if isinstance(payload, dict) else payload
         if not isinstance(items, list):

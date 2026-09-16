@@ -43,3 +43,16 @@ def test_adzuna_scraper_normalizes_job_response():
     assert results[0].company == "Adzuna Company"
     assert results[0].employment_type == EmploymentType.FULL_TIME
     assert results[0].description == "Build Python services."
+
+
+def test_adzuna_scraper_logs_and_fails_closed_on_provider_errors(caplog):
+    scraper = AdzunaScraper(
+        app_id="id", app_key="key", fetch=lambda request, timeout: (_ for _ in ()).throw(OSError("boom"))
+    )
+
+    with caplog.at_level("WARNING"):
+        results = scraper.search(SearchCriteria(role="Engineer"))
+
+    assert results == []
+    assert "adzuna" in caplog.text
+    assert "boom" in caplog.text

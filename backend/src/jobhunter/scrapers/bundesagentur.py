@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import base64
+import logging
 from collections.abc import Callable, Sequence
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
@@ -11,6 +12,8 @@ from urllib.request import Request, urlopen
 from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import SearchCriteria
 from jobhunter.scrapers.base import Scraper
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_ENDPOINT = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs"
 DEFAULT_CLIENT_ID = "jobboerse-jobsuche"
@@ -38,10 +41,11 @@ class BundesagenturScraper(Scraper):
     def search(self, criteria: SearchCriteria) -> Sequence[JobPosting]:
         params = {
             "was": criteria.role or " ".join(criteria.keywords),
-            "wo": criteria.location or "",
             "page": "1",
             "size": str(min(criteria.limit, 100)),
         }
+        if criteria.location:
+            params["wo"] = criteria.location
         request = Request(
             f"{self._endpoint}?{urlencode(params)}",
             headers={
@@ -53,7 +57,8 @@ class BundesagenturScraper(Scraper):
         try:
             with self._fetch(request, timeout=5) as response:
                 payload = json.load(response)
-        except (OSError, ValueError, TimeoutError):
+        except (OSError, ValueError, TimeoutError) as exc:
+            logger.warning("bundesagentur: search failed: %s", exc)
             return []
 
         jobs = []

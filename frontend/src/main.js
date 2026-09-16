@@ -68,6 +68,8 @@ app.innerHTML = `
       </section>
 
       <section class="results-section" id="results-section"><div class="results-header"><div><span class="section-number">03</span><h3>Recommended for you</h3></div><span class="result-count" id="result-count">Waiting for your first search</span></div><div class="results-list" id="results-list"><div class="empty-results"><span class="empty-mark">✦</span><strong>Your shortlist will appear here.</strong><span>Upload a profile and run a search to see ranked roles.</span></div></div></section>
+
+      <section class="results-section" id="health-section"><div class="results-header"><div><span class="section-number">04</span><h3>Source health</h3></div><span class="result-count" id="health-count">Checking...</span></div><div class="health-list" id="health-list"><div class="empty-results"><span class="empty-mark">·</span><strong>No checks yet.</strong><span>A background agent tests every source automatically and reports here.</span></div></div></section>
       <footer>JOBHUNTER <span>·</span> A considered way to look for work</footer>
     </main>
   </div>
@@ -129,3 +131,64 @@ $('upload-profile').addEventListener('click', saveProfile)
 $('run-search').addEventListener('click', runSearch)
 $('load-run').addEventListener('click', loadRun)
 $('health-button').addEventListener('click', async () => { try { const response = await fetch(`${API_URL}/health`); $('health-button').innerHTML = `<span class="pulse good"></span>${response.ok ? 'API connected' : 'API issue'}` } catch { $('health-button').innerHTML = '<span class="pulse bad"></span>API offline' } })
+
+function timeAgo(iso) {
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  return `${Math.round(minutes / 60)}h ago`
+}
+
+function renderHealth(findings) {
+  $('health-count').textContent = `${findings.length} source${findings.length === 1 ? '' : 's'} tracked`
+  const list = $('health-list')
+  if (!findings.length) return
+  list.innerHTML = findings.map((finding) => {
+    const pulseClass = finding.status === 'ok' ? 'good' : finding.status === 'error' ? 'bad' : ''
+    const detail = finding.status === 'error'
+      ? (finding.diagnosis || finding.error_detail || 'Failing, diagnosis pending.')
+      : finding.status === 'no_results'
+        ? 'No results returned, but no error detected — may just be a quiet source right now.'
+        : `${finding.discovered_count} job${finding.discovered_count === 1 ? '' : 's'} found.`
+    const diffLines = finding.fix_status === 'proposed' && finding.diff_preview
+      ? finding.diff_preview.split('\n').map((line) => `<span class="${line.startsWith('+') ? 'add' : line.startsWith('-') ? 'del' : ''}">${line.replace(/</g, '&lt;')}</span>`).join('\n')
+      : ''
+    let actions = ''
+    if (finding.fix_status === 'proposed') {
+      const diffBlock = `<pre class="health-diff">${diffLines}</pre>`
+      if (finding.try_status === 'none') {
+        actions = `${diffBlock}<div class="health-actions"><button class="try-fix" data-source="${finding.source}">Try recommended fix</button></div>`
+      } else {
+        const worked = finding.try_status === 'worked'
+        actions = `${diffBlock}<div class="health-try-result ${worked ? 'worked' : 'failed'}">${worked ? '✓ Worked' : '✗ Failed'} — ${finding.try_detail || ''}</div><div class="health-actions"><button class="apply-fix" data-source="${finding.source}">Apply change</button><button class="dismiss-fix" data-source="${finding.source}">Reject change</button></div>`
+      }
+    } else if (finding.fix_status === 'applied') {
+      actions = '<span class="health-fix-status">Fix applied · will reconfirm on next check</span>'
+    } else if (finding.fix_status === 'dismissed') {
+      actions = '<span class="health-fix-status">Fix rejected</span>'
+    }
+    return `<article class="health-row"><div class="health-row-top"><span class="health-source"><span class="pulse ${pulseClass}"></span>${finding.source}</span><span class="health-meta">${timeAgo(finding.checked_at)}</span></div><p class="health-detail">${detail}</p>${actions}</article>`
+  }).join('')
+  list.querySelectorAll('.try-fix').forEach((button) => button.addEventListener('click', () => tryFix(button.dataset.source)))
+  list.querySelectorAll('.apply-fix').forEach((button) => button.addEventListener('click', () => applyFix(button.dataset.source)))
+  list.querySelectorAll('.dismiss-fix').forEach((button) => button.addEventListener('click', () => dismissFix(button.dataset.source)))
+}
+
+async function fetchHealth() {
+  try {
+    const response = await fetch(`${API_URL}/api/health/sources`)
+    if (!response.ok) return
+    renderHealth(await response.json())
+  } catch { /* background poll, ignore failures */ }
+}
+
+async function tryFix(source) {
+  const button = document.querySelector(`.try-fix[data-source="${source}"]`)
+  if (button) { button.disabled = true; button.textContent = 'Trying...' }
+  try { await fetch(`${API_URL}/api/health/sources/${encodeURIComponent(source)}/try-fix`, { method: 'POST' }) } finally { fetchHealth() }
+}
+async function applyFix(source) { await fetch(`${API_URL}/api/health/sources/${encodeURIComponent(source)}/apply-fix`, { method: 'POST' }); fetchHealth() }
+async function dismissFix(source) { await fetch(`${API_URL}/api/health/sources/${encodeURIComponent(source)}/dismiss-fix`, { method: 'POST' }); fetchHealth() }
+
+fetchHealth()
+setInterval(fetchHealth, 60000)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import json
+import logging
 import re
 from collections.abc import Callable, Sequence
 from urllib.request import Request, urlopen
@@ -12,6 +13,8 @@ from jobhunter.models.job import EmploymentType, JobPosting
 from jobhunter.models.search_criteria import CandidateProfile, SearchCriteria
 from jobhunter.scrapers.base import Scraper
 from jobhunter.scrapers.greenhouse_catalog import GREENHOUSE_COMPANIES, select_top_companies
+
+logger = logging.getLogger(__name__)
 
 
 def _text(value: object) -> str:
@@ -45,7 +48,8 @@ class GreenhouseScraper(Scraper):
             try:
                 with self._fetch(request, timeout=5) as response:
                     payload = json.load(response)
-            except (OSError, ValueError, TimeoutError):
+            except (OSError, ValueError, TimeoutError) as exc:
+                logger.warning("greenhouse: search failed for board %s: %s", board, exc)
                 continue
             for item in payload.get("jobs", []) if isinstance(payload, dict) else []:
                 location = item.get("location", {})
@@ -75,7 +79,8 @@ class LeverScraper(Scraper):
             try:
                 with self._fetch(request, timeout=5) as response:
                     payload = json.load(response)
-            except (OSError, ValueError, TimeoutError):
+            except (OSError, ValueError, TimeoutError) as exc:
+                logger.warning("lever: search failed for site %s: %s", site, exc)
                 continue
             for item in payload if isinstance(payload, list) else []:
                 categories = item.get("categories", {})
