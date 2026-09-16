@@ -64,6 +64,8 @@ class MatchFilters(BaseModel):
     remote_type: str | None = None  # onsite | hybrid | remote
     language: str | None = None
     employment_type: str | None = None
+    title: str | None = None
+    company: str | None = None
 
 
 class MatchResult(BaseModel):

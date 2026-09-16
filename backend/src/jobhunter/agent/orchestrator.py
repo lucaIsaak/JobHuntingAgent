@@ -52,7 +52,13 @@ class JobSearchOrchestrator:
     def __init__(self, scrapers: Sequence[Scraper]) -> None:
         self._scrapers = list(scrapers)
 
-    def run_search(self, profile: CandidateProfile, criteria: SearchCriteria) -> SearchOutcome:
+    def fetch_postings(
+        self, profile: CandidateProfile, criteria: SearchCriteria
+    ) -> tuple[list[JobPosting], dict[str, int]]:
+        """Query every scraper matching `criteria.sources` and return the raw (pre-dedup)
+        postings plus a per-source discovered count. Split out from `run_search()` so a caller
+        that wants to filter/rank against the curated jobs database instead (rather than the
+        old in-memory filter/rank below) can still reuse the exact same scraper-querying logic."""
         postings = []
         queried_sources: set[str] = set()
         for scraper in self._scrapers:
@@ -71,6 +77,10 @@ class JobSearchOrchestrator:
         for posting in postings:
             source_counts[posting.source] = source_counts.get(posting.source, 0) + 1
 
+        return postings, source_counts
+
+    def run_search(self, profile: CandidateProfile, criteria: SearchCriteria) -> SearchOutcome:
+        postings, source_counts = self.fetch_postings(profile, criteria)
         unique_postings = deduplicate_postings(postings)
         filtered_postings = filter_postings(unique_postings, criteria)
         ranked = rank_jobs(profile=profile, criteria=criteria, postings=filtered_postings)

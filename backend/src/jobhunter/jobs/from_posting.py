@@ -63,6 +63,8 @@ def convert_posting(posting: JobPosting) -> Job:
         title=posting.title,
         normalized_title=normalize_title(posting.title),
         company=posting.company,
+        source=posting.source,
+        url=posting.url,
         industry=industry_tags[0] if industry_tags else None,
         function=industry_tags[1] if len(industry_tags) > 1 else None,
         location=posting.location,

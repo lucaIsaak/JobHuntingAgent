@@ -28,6 +28,8 @@ class Job(BaseModel):
     title: str
     normalized_title: str
     company: str
+    source: str | None = None
+    url: str | None = None
     industry: str | None = None
     function: str | None = None
 

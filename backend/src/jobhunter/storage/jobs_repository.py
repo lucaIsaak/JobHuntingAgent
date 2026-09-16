@@ -174,6 +174,12 @@ class JobsRepository:
             if filters.employment_type:
                 clauses.append("employment_type = ?")
                 params.append(filters.employment_type)
+            if filters.title:
+                clauses.append("normalized_title LIKE ?")
+                params.append(f"%{filters.title}%")
+            if filters.company:
+                clauses.append("company LIKE ?")
+                params.append(f"%{filters.company}%")
 
         query = "SELECT job_id, job_json FROM jobs"
         if clauses:

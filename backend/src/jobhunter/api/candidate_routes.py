@@ -10,13 +10,20 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from pydantic import BaseModel, Field
 
+from jobhunter.api import routes
 from jobhunter.candidate import extractor
+from jobhunter.candidate.normalize import SKILLS_CATALOG, normalize_skill
 from jobhunter.candidate.schema import Candidate, CandidateProfile
 from jobhunter.config import settings
+from jobhunter.jobs.from_posting import convert_posting
 from jobhunter.jobs.schema import Job
 from jobhunter.matching import engine
-from jobhunter.matching.schema import MatchFilters, MatchRun, MatchWeights
+from jobhunter.matching.keyword_rank import score_by_keywords
+from jobhunter.matching.schema import MatchFilters, MatchResult, MatchRun, MatchWeights
+from jobhunter.matching.semantic import build_corpus_stats
+from jobhunter.models.search_criteria import CandidateProfile as LegacyCandidateProfile, SearchCriteria
 from jobhunter.services.cv_parser import parse_cv_file_pages
 from jobhunter.storage.candidate_repository import CandidateRepository
 from jobhunter.storage.jobs_repository import JobsRepository
@@ -68,6 +75,14 @@ async def upload_candidate_cv(cv_file: UploadFile = File(...)) -> CandidateProfi
     return profile
 
 
+@router.get("/skills-catalog", response_model=list[str])
+def get_skills_catalog() -> list[str]:
+    """Known skill terms for the CV-summary editor's add-a-skill autocomplete."""
+    terms = sorted({term for terms in SKILLS_CATALOG.values() for term in terms})
+    display = [normalize_skill(term) if normalize_skill(term) != term else term.title() for term in terms]
+    return sorted(set(display))
+
+
 @router.get("/candidates/{profile_id}", response_model=CandidateProfile)
 def get_candidate_profile(profile_id: str) -> CandidateProfile:
     profile = candidate_repository.get_profile(profile_id)
@@ -87,6 +102,129 @@ def update_candidate_profile(profile_id: str, profile: CandidateProfile) -> Cand
         raise HTTPException(status_code=400, detail="profile_id in body must match the URL")
     candidate_repository.save_profile(profile)
     return profile
+
+
+class UnifiedSearchRequest(BaseModel):
+    """One request shape for both entry points: with a candidate_profile_id, results come from
+    the full matching engine; without one, from simple keyword relevance. Either way, live
+    postings are fetched first and written into the same jobs database before filtering."""
+
+    candidate_profile_id: str | None = None
+    role: str = Field(min_length=2)
+    keywords: list[str] = Field(default_factory=list)
+    location: str | None = None
+    remote_type: str | None = None  # onsite | hybrid | remote
+    employment_type: str | None = None
+    seniority: str | None = None
+    industry: str | None = None
+    company: str | None = None
+    language: str | None = None
+    min_score: float = 0.0
+    limit: int = 20
+    sources: list[str] = Field(default_factory=list)
+
+
+class UnifiedSearchResponse(BaseModel):
+    run_id: str
+    used_profile: bool
+    filters_used: MatchFilters
+    results: list[MatchResult]
+    source_status: list[routes.SourceStatus] = Field(default_factory=list)
+
+
+@router.post("/search", response_model=UnifiedSearchResponse)
+def unified_search(payload: UnifiedSearchRequest) -> UnifiedSearchResponse:
+    rich_profile: CandidateProfile | None = None
+    if payload.candidate_profile_id:
+        rich_profile = candidate_repository.get_profile(payload.candidate_profile_id)
+        if not rich_profile:
+            raise HTTPException(status_code=404, detail="profile not found")
+
+    # search_for_profile()-aware scrapers (e.g. company boards) pick boards by industry — reuse
+    # the real profile's industries when we have one, for a better live fetch even in this step.
+    scraper_profile = LegacyCandidateProfile(
+        profile_id=str(uuid4()),
+        raw_cv_text=f"Role-only search: {payload.role}",
+        titles=[payload.role],
+        industries=list(rich_profile.industries) if rich_profile else [],
+    )
+    criteria = SearchCriteria(
+        role=payload.role,
+        location=payload.location,
+        keywords=payload.keywords,
+        remote_only=payload.remote_type == "remote",
+        employment_types=[payload.employment_type] if payload.employment_type else [],
+        limit=payload.limit,
+        sources=payload.sources,
+    )
+
+    postings, source_counts = routes.orchestrator.fetch_postings(scraper_profile, criteria)
+
+    try:
+        jobs_repository.upsert_jobs([convert_posting(posting) for posting in postings])
+        document_frequency, document_count = build_corpus_stats(jobs_repository.all_job_texts())
+        jobs_repository.save_corpus_stats(document_frequency, document_count)
+    except Exception:
+        logger.exception("failed to import discovered postings into the matching database")
+
+    source_status = [
+        routes.SourceStatus(source=source, status="ok" if count > 0 else "no_results", count=count)
+        for source, count in sorted(source_counts.items())
+    ]
+
+    filters = MatchFilters(
+        min_score=payload.min_score,
+        location=payload.location,
+        seniority=payload.seniority,
+        industry=payload.industry,
+        remote_type=payload.remote_type,
+        language=payload.language,
+        employment_type=payload.employment_type,
+        title=payload.role,
+        company=payload.company,
+    )
+
+    if rich_profile:
+        match_run = engine.run_match(
+            profile=rich_profile,
+            jobs_repo=jobs_repository,
+            match_repo=match_repository,
+            filters=filters,
+            top_k=payload.limit,
+        )
+        run_id, results = match_run.run_id, match_run.results
+    else:
+        query_text = f"{payload.role} {' '.join(payload.keywords)}"
+        scored = [
+            MatchResult(
+                job_id=job.job_id,
+                overall_fit=score_by_keywords(query_text, job),
+                match_reasons=["matches your search"],
+            )
+            for job in jobs_repository.prefilter(filters)
+        ]
+        scored = [result for result in scored if result.overall_fit >= payload.min_score]
+        scored.sort(key=lambda result: result.overall_fit, reverse=True)
+        results = scored[: payload.limit]
+        run_id = str(uuid4())
+        match_repository.save_match_run(
+            MatchRun(
+                run_id=run_id,
+                profile_id=scraper_profile.profile_id,
+                weights_used=MatchWeights(),
+                filters_used=filters,
+                created_at=datetime.now(UTC).isoformat(),
+                results=results,
+            )
+        )
+
+    return UnifiedSearchResponse(
+        run_id=run_id,
+        used_profile=rich_profile is not None,
+        filters_used=filters,
+        results=results,
+        source_status=source_status,
+    )
 
 
 class MatchRequest(MatchFilters):

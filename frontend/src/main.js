@@ -8,9 +8,12 @@ const state = {
   results: [],
   runId: '',
   jobsById: {},
+  skillsCatalog: null,
 }
 
 const SENIORITY_LEVELS = ['intern', 'junior', 'mid', 'senior', 'lead', 'manager', 'director', 'executive']
+const LANGUAGE_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Native']
+const EMPLOYMENT_TYPES = [['intern', 'Intern'], ['full_time', 'Full-time'], ['part_time', 'Part-time'], ['contract', 'Contract']]
 
 const app = document.querySelector('#app')
 
@@ -69,12 +72,21 @@ app.innerHTML = `
         <section class="welcome-row"><div><h2>Shape the search<span class="accent">.</span></h2><p id="search-screen-subtitle">Let's make your next move a considered one.</p></div><div class="run-lookup"><label for="run-id" id="run-lookup-label">Retrieve a saved run</label><div class="lookup-line"><input id="run-id" placeholder="Paste run ID" /><button class="text-button" id="load-run">Load</button></div></div></section>
 
         <section class="workspace-grid single">
-          <div class="panel search-panel" id="plain-filters">
+          <div class="panel search-panel" id="search-filters">
             <div class="panel-heading"><div><span class="section-number">02</span><h3>Shape the search</h3></div><span class="panel-caption">FILTERS</span></div>
-            <p class="panel-copy">Tell the agent what a good next role looks like. Role is the only thing required.</p>
-            <div class="field-grid"><div class="field full"><label for="role">Role <span>required</span></label><input id="role" placeholder="e.g. Backend Engineer" /></div><div class="field"><label for="location">Location</label><input id="location" placeholder="e.g. Berlin" /></div><div class="field"><label for="keywords">Keywords</label><input id="keywords" placeholder="python, APIs" /></div></div>
-            <div class="toggle-row"><div><strong>Remote only</strong><small>Only show roles that can be worked remotely</small></div><label class="switch"><input type="checkbox" id="remote-only" /><span></span></label></div>
-            <div class="field"><label for="employment">Employment type</label><select id="employment"><option value="">Any employment type</option><option value="full_time">Full time</option><option value="part_time">Part time</option><option value="contract">Contract</option><option value="intern">Internship</option></select></div>
+            <p class="panel-copy" id="search-panel-copy">Tell the agent what a good next role looks like. Role is the only thing required.</p>
+            <div class="field-grid">
+              <div class="field full"><label for="role">Role <span>required</span></label><input id="role" placeholder="e.g. Backend Engineer" /></div>
+              <div class="field"><label for="location">Location</label><input id="location" placeholder="e.g. Berlin" /></div>
+              <div class="field"><label for="keywords">Keywords</label><input id="keywords" placeholder="python, APIs" /></div>
+              <div class="field"><label for="company">Company</label><input id="company" placeholder="e.g. Stripe" /></div>
+              <div class="field"><label for="industry">Industry</label><input id="industry" placeholder="e.g. fintech" /></div>
+              <div class="field"><label for="language">Language</label><input id="language" placeholder="e.g. German" /></div>
+              <div class="field"><label for="remote-type">Remote</label><select id="remote-type"><option value="">Any</option><option value="onsite">Onsite</option><option value="hybrid">Hybrid</option><option value="remote">Remote</option></select></div>
+              <div class="field"><label for="employment">Employment type</label><select id="employment"><option value="">Any employment type</option>${EMPLOYMENT_TYPES.map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}</select></div>
+              <div class="field"><label for="seniority">Seniority</label><select id="seniority"><option value="">Any seniority</option>${SENIORITY_LEVELS.map((level) => `<option value="${level}">${level[0].toUpperCase()}${level.slice(1)}</option>`).join('')}</select></div>
+              <div class="field"><label for="min-score">Min score</label><input type="number" id="min-score" min="0" max="100" placeholder="0" /></div>
+            </div>
             <div class="limit-row"><label for="limit">Results <span>1–200</span></label><input type="number" id="limit" min="1" max="200" value="25" /></div>
             <fieldset class="source-filter"><legend>Sources</legend><div class="source-actions"><button type="button" class="text-button" id="select-all-sources">Select all</button><button type="button" class="text-button" id="deselect-all-sources">Deselect all</button></div><div class="source-options">${[
               ['arbeitnow', 'Arbeitnow'],
@@ -85,22 +97,6 @@ app.innerHTML = `
               ['lever', 'Lever'],
             ].map(([value, label]) => `<label><input type="checkbox" name="source" value="${value}" checked /><span>${label}</span></label>`).join('')}</div></fieldset>
             <button class="primary-button" id="run-search">Run search <span>↗</span></button>
-          </div>
-
-          <div class="panel search-panel" id="matcher-filters" hidden>
-            <div class="panel-heading"><div><span class="section-number">02</span><h3>Match filters</h3></div><span class="panel-caption">FILTERS</span></div>
-            <p class="panel-copy">Narrow the shortlist against your extracted profile. Everything here is optional.</p>
-            <div class="field-grid">
-              <div class="field"><label for="cm-min-score">Min score</label><input type="number" id="cm-min-score" min="0" max="100" placeholder="0" /></div>
-              <div class="field"><label for="cm-location">Location</label><input id="cm-location" placeholder="e.g. Berlin" /></div>
-              <div class="field"><label for="cm-seniority">Seniority</label><select id="cm-seniority"><option value="">Any seniority</option>${SENIORITY_LEVELS.map((level) => `<option value="${level}">${level[0].toUpperCase()}${level.slice(1)}</option>`).join('')}</select></div>
-              <div class="field"><label for="cm-industry">Industry</label><input id="cm-industry" placeholder="e.g. fintech" /></div>
-              <div class="field"><label for="cm-remote-type">Remote type</label><select id="cm-remote-type"><option value="">Any</option><option value="onsite">Onsite</option><option value="hybrid">Hybrid</option><option value="remote">Remote</option></select></div>
-              <div class="field"><label for="cm-language">Language</label><input id="cm-language" placeholder="e.g. German" /></div>
-              <div class="field"><label for="cm-employment">Employment type</label><select id="cm-employment"><option value="">Any employment type</option><option value="full_time">Full time</option><option value="part_time">Part time</option><option value="contract">Contract</option><option value="intern">Internship</option></select></div>
-              <div class="field"><label for="cm-top-k">Results</label><input type="number" id="cm-top-k" min="1" max="100" value="20" /></div>
-            </div>
-            <button class="primary-button" id="cm-run-match">Run match <span>↗</span></button>
           </div>
         </section>
 
@@ -133,30 +129,204 @@ function goToSearchScreen() {
   $('screen-upload').hidden = true
   $('screen-search').hidden = false
   const isMatcher = state.mode === 'matcher'
-  $('plain-filters').hidden = isMatcher
-  $('matcher-filters').hidden = !isMatcher
-  $('run-lookup-label').textContent = isMatcher ? 'Retrieve a saved match' : 'Retrieve a saved run'
   $('search-screen-subtitle').textContent = isMatcher
-    ? 'Filters run against your extracted profile.'
+    ? 'Filters run against your extracted profile, on top of jobs fetched live.'
     : "Let's make your next move a considered one."
+  $('search-panel-copy').textContent = isMatcher
+    ? 'Jobs are fetched live for this role, then ranked against your extracted profile. Everything below is optional.'
+    : 'Tell the agent what a good next role looks like. Role is the only thing required.'
   setActiveStep(1)
 }
 
 // --- Screen 1: CV upload (optional) ---
 
+function syncProfileJson() {
+  $('cm-profile-json').value = JSON.stringify(state.candidateProfile, null, 2)
+}
+
+function levelToCanonical(level) {
+  const key = (level || '').trim().toLowerCase()
+  const map = {
+    a1: 'A1', a2: 'A2', basic: 'A2',
+    b1: 'B1', intermediate: 'B1', conversational: 'B1',
+    b2: 'B2', professional: 'B2', 'working proficiency': 'B2', 'professional working proficiency': 'B2',
+    c1: 'C1', advanced: 'C1', fluent: 'C1',
+    c2: 'C2', native: 'Native', bilingual: 'Native', 'mother tongue': 'Native',
+  }
+  return map[key] || ''
+}
+
+async function ensureSkillsCatalog() {
+  if (state.skillsCatalog) return state.skillsCatalog
+  try {
+    const response = await fetch(`${API_URL}/api/skills-catalog`)
+    state.skillsCatalog = response.ok ? await response.json() : []
+  } catch { state.skillsCatalog = [] }
+  return state.skillsCatalog
+}
+
 function renderCandidateSummary(profile) {
   const summary = $('cm-summary')
-  const topSkills = (profile.skills || []).slice(0, 8).map((skill) => skill.normalized_name).join(', ')
-  const languages = (profile.languages || []).map((language) => `${language.language} (${language.level})`).join(', ')
   summary.hidden = false
-  summary.innerHTML = `<strong>${profile.full_name || 'Unnamed candidate'}</strong>${profile.headline ? `<span>${profile.headline}</span>` : ''}<div class="cm-summary-tags">${profile.seniority_level ? `<span>${profile.seniority_level}</span>` : ''}${profile.years_of_experience_total != null ? `<span>${profile.years_of_experience_total} yrs</span>` : ''}${topSkills ? `<span>${topSkills}</span>` : ''}${languages ? `<span>${languages}</span>` : ''}</div>`
+  const seniorityOptions = ['', ...SENIORITY_LEVELS].map((level) => `<option value="${level}" ${level === (profile.seniority_level || '') ? 'selected' : ''}>${level ? `${level[0].toUpperCase()}${level.slice(1)}` : 'Not set'}</option>`).join('')
+  const levelOptions = (selected) => ['', ...LANGUAGE_LEVELS].map((level) => `<option value="${level}" ${level === selected ? 'selected' : ''}>${level || 'Not set'}</option>`).join('')
+
+  const skillsHtml = (profile.skills || []).map((skill, index) => `<span class="cm-tag">${skill.normalized_name}<button type="button" class="cm-tag-remove" data-skill-index="${index}" aria-label="Remove ${skill.normalized_name}">×</button></span>`).join('')
+  const languagesHtml = (profile.languages || []).map((language, index) => `<div class="cm-lang-row"><span>${language.language}</span><select class="cm-lang-level-select" data-lang-index="${index}">${levelOptions(levelToCanonical(language.level))}</select><button type="button" class="cm-tag-remove" data-lang-index-remove="${index}" aria-label="Remove ${language.language}">×</button></div>`).join('')
+
+  const employmentOptions = (selected) => ['', ...EMPLOYMENT_TYPES.map(([value]) => value)].map((value) => {
+    const label = value ? EMPLOYMENT_TYPES.find(([v]) => v === value)[1] : 'Not set'
+    return `<option value="${value}" ${value === (selected || '') ? 'selected' : ''}>${label}</option>`
+  }).join('')
+  const manualEntries = (profile.experience || []).map((entry, index) => ({ entry, index })).filter(({ entry }) => entry.evidence && entry.evidence.source_text === 'Added manually')
+  const extraHtml = manualEntries.map(({ entry, index }) => `<div class="cm-exp-entry-row"><select class="cm-exp-type-select" data-exp-index="${index}">${employmentOptions(entry.employment_type)}</select><div class="cm-years-field"><input type="number" class="cm-exp-years-input" data-exp-index="${index}" min="0" step="0.1" value="${entry.duration_months ? Math.round((entry.duration_months / 12) * 10) / 10 : ''}" placeholder="0" /><span>yrs</span></div><button type="button" class="cm-tag-remove" data-exp-index-remove="${index}" aria-label="Remove entry">×</button></div>`).join('')
+
+  summary.innerHTML = `
+    <strong>${profile.full_name || 'Unnamed candidate'}</strong>${profile.headline ? `<span>${profile.headline}</span>` : ''}
+    <div class="cm-subsection">
+      <h5>Experience</h5>
+      <div class="cm-exp-row">
+        <select id="cm-seniority-select">${seniorityOptions}</select>
+        <div class="cm-years-field"><input type="number" id="cm-years-input" min="0" step="0.1" value="${profile.years_of_experience_total ?? ''}" placeholder="0" /><span>years</span></div>
+      </div>
+      <div class="cm-exp-list" id="cm-exp-list">${extraHtml}</div>
+      <button type="button" class="text-button" id="cm-exp-add-btn">+ Add employment type</button>
+    </div>
+    <div class="cm-subsection">
+      <h5>Skills</h5>
+      <div class="cm-tag-list" id="cm-skills-list">${skillsHtml}</div>
+      <div class="cm-tag-search">
+        <input type="text" id="cm-skill-search" placeholder="Add a skill..." autocomplete="off" />
+        <div class="cm-tag-suggestions" id="cm-skill-suggestions" hidden></div>
+      </div>
+    </div>
+    <div class="cm-subsection">
+      <h5>Languages</h5>
+      <div class="cm-lang-list" id="cm-lang-list">${languagesHtml}</div>
+      <div class="cm-lang-add">
+        <input type="text" id="cm-lang-new-name" placeholder="Add a language..." />
+        <select id="cm-lang-new-level">${levelOptions('')}</select>
+        <button type="button" class="outline-button" id="cm-lang-add-btn">Add</button>
+      </div>
+    </div>
+  `
+
+  wireCandidateSummaryEvents()
+}
+
+function wireCandidateSummaryEvents() {
+  $('cm-seniority-select').addEventListener('change', (event) => {
+    state.candidateProfile.seniority_level = event.target.value || null
+    syncProfileJson()
+  })
+  $('cm-years-input').addEventListener('change', (event) => {
+    state.candidateProfile.years_of_experience_total = event.target.value === '' ? null : Number(event.target.value)
+    syncProfileJson()
+  })
+
+  document.querySelectorAll('.cm-exp-type-select[data-exp-index]').forEach((select) => {
+    select.addEventListener('change', () => {
+      state.candidateProfile.experience[Number(select.dataset.expIndex)].employment_type = select.value || null
+      syncProfileJson()
+    })
+  })
+  document.querySelectorAll('.cm-exp-years-input[data-exp-index]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const years = input.value === '' ? 0 : Number(input.value)
+      state.candidateProfile.experience[Number(input.dataset.expIndex)].duration_months = Math.round(years * 12)
+      syncProfileJson()
+    })
+  })
+  document.querySelectorAll('.cm-tag-remove[data-exp-index-remove]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.candidateProfile.experience.splice(Number(button.dataset.expIndexRemove), 1)
+      renderCandidateSummary(state.candidateProfile)
+      syncProfileJson()
+    })
+  })
+  $('cm-exp-add-btn').addEventListener('click', () => {
+    state.candidateProfile.experience = state.candidateProfile.experience || []
+    state.candidateProfile.experience.push({
+      title: 'Experience',
+      normalized_title: 'Experience',
+      company: 'Not specified',
+      company_normalized: 'Not specified',
+      employment_type: null,
+      duration_months: 0,
+      evidence: { source_text: 'Added manually', confidence: 1.0 },
+    })
+    renderCandidateSummary(state.candidateProfile)
+    syncProfileJson()
+  })
+
+  document.querySelectorAll('.cm-tag-remove[data-skill-index]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.candidateProfile.skills.splice(Number(button.dataset.skillIndex), 1)
+      renderCandidateSummary(state.candidateProfile)
+      syncProfileJson()
+    })
+  })
+
+  const skillSearch = $('cm-skill-search')
+  const skillSuggestions = $('cm-skill-suggestions')
+  skillSearch.addEventListener('input', async () => {
+    const query = skillSearch.value.trim().toLowerCase()
+    if (!query) { skillSuggestions.hidden = true; return }
+    const catalog = await ensureSkillsCatalog()
+    const existing = new Set((state.candidateProfile.skills || []).map((skill) => skill.normalized_name.toLowerCase()))
+    const matches = catalog.filter((term) => term.toLowerCase().includes(query) && !existing.has(term.toLowerCase())).slice(0, 8)
+    if (!matches.length) { skillSuggestions.hidden = true; return }
+    skillSuggestions.hidden = false
+    skillSuggestions.innerHTML = matches.map((term) => `<button type="button" class="cm-suggestion" data-term="${term}">${term}</button>`).join('')
+    skillSuggestions.querySelectorAll('.cm-suggestion').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.candidateProfile.skills.push({
+          name: button.dataset.term,
+          normalized_name: button.dataset.term,
+          category: 'other',
+          is_soft_skill: false,
+          evidence: [],
+        })
+        skillSearch.value = ''
+        skillSuggestions.hidden = true
+        renderCandidateSummary(state.candidateProfile)
+        syncProfileJson()
+      })
+    })
+  })
+
+  document.querySelectorAll('.cm-lang-level-select[data-lang-index]').forEach((select) => {
+    select.addEventListener('change', () => {
+      state.candidateProfile.languages[Number(select.dataset.langIndex)].level = select.value || 'unspecified'
+      syncProfileJson()
+    })
+  })
+  document.querySelectorAll('.cm-tag-remove[data-lang-index-remove]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.candidateProfile.languages.splice(Number(button.dataset.langIndexRemove), 1)
+      renderCandidateSummary(state.candidateProfile)
+      syncProfileJson()
+    })
+  })
+  $('cm-lang-add-btn').addEventListener('click', () => {
+    const name = $('cm-lang-new-name').value.trim()
+    if (!name) return
+    state.candidateProfile.languages.push({
+      language: name,
+      level: $('cm-lang-new-level').value || 'unspecified',
+      evidence: { source_text: 'Added manually', confidence: 1.0 },
+    })
+    renderCandidateSummary(state.candidateProfile)
+    syncProfileJson()
+  })
 }
 
 function setCandidateProfile(profile) {
   state.candidateProfile = profile
   renderCandidateSummary(profile)
+  ensureSkillsCatalog()
   $('cm-review').hidden = false
-  $('cm-profile-json').value = JSON.stringify(profile, null, 2)
+  syncProfileJson()
   $('continue-to-search').hidden = false
 }
 
@@ -190,15 +360,11 @@ async function saveCandidateProfileEdits() {
 
 function renderResultCard(result, index) {
   const rank = String(index + 1).padStart(2, '0')
-  if (state.mode === 'matcher') {
-    const job = state.jobsById[result.job_id]
-    const reasons = (result.match_reasons || []).map((reason) => `<span>${reason}</span>`).join('')
-    const gaps = (result.gap_reasons || []).map((reason) => `<span>${reason}</span>`).join('')
-    const subscores = Object.entries(result.subscores || {}).map(([name, value]) => `<span>${name}: ${Math.round(value * 100)}%</span>`).join('')
-    return `<article class="job-card"><div class="job-card-top"><span class="rank">${rank}</span><span class="match-score">${Math.round(result.overall_fit)}% fit</span></div><span class="source">${job ? job.company : result.job_id}</span><h4>${job ? job.title : 'Job details unavailable'}</h4>${job ? `<p class="company">${job.company} <span>·</span> ${job.location || 'Unspecified'}</p>` : ''}${reasons ? `<div class="job-tags">${reasons}</div>` : ''}${gaps ? `<div class="job-tags gap-tags">${gaps}</div>` : ''}${subscores ? `<details class="cm-subscores"><summary>Subscores &amp; evidence</summary><div class="job-tags">${subscores}</div></details>` : ''}</article>`
-  }
-  const reasons = (result.reasons || []).slice(0, 3).map((reason) => `<span>${reason}</span>`).join('')
-  return `<article class="job-card"><div class="job-card-top"><span class="rank">${rank}</span><span class="match-score">${Math.round(result.score * 100)}% match</span></div><span class="source">${result.job.source}</span><h4>${result.job.title}</h4><p class="company">${result.job.company} <span>·</span> ${result.job.location}</p><div class="job-tags"><span>${result.job.is_remote ? 'Remote' : result.job.location}</span><span>${result.job.employment_type.replace('_', ' ')}</span>${reasons}</div><a class="open-job" href="${result.job.url}" target="_blank" rel="noreferrer">Open posting ↗</a></article>`
+  const job = state.jobsById[result.job_id]
+  const reasons = (result.match_reasons || []).map((reason) => `<span>${reason}</span>`).join('')
+  const gaps = (result.gap_reasons || []).map((reason) => `<span>${reason}</span>`).join('')
+  const subscores = Object.entries(result.subscores || {}).map(([name, value]) => `<span>${name}: ${Math.round(value * 100)}%</span>`).join('')
+  return `<article class="job-card"><div class="job-card-top"><span class="rank">${rank}</span><span class="match-score">${Math.round(result.overall_fit)}% match</span></div><span class="source">${job ? job.source || job.company : result.job_id}</span><h4>${job ? job.title : 'Job details unavailable'}</h4>${job ? `<p class="company">${job.company} <span>·</span> ${job.location || 'Unspecified'}</p>` : ''}${job ? `<div class="job-tags"><span>${job.remote_type === 'remote' ? 'Remote' : job.location || 'Unspecified'}</span><span>${(job.employment_type || '').replace('_', ' ')}</span></div>` : ''}${reasons ? `<div class="job-tags">${reasons}</div>` : ''}${gaps ? `<div class="job-tags gap-tags">${gaps}</div>` : ''}${subscores ? `<details class="cm-subscores"><summary>Subscores &amp; evidence</summary><div class="job-tags">${subscores}</div></details>` : ''}${job && job.url ? `<a class="open-job" href="${job.url}" target="_blank" rel="noreferrer">Open posting ↗</a>` : ''}</article>`
 }
 
 function renderResultsGrid(items) {
@@ -231,49 +397,33 @@ async function runSearch() {
   const sources = [...document.querySelectorAll('input[name="source"]:checked')].map((input) => input.value)
   if (!sources.length) { $('result-count').textContent = 'Select at least one source.'; return }
   $('run-search').disabled = true; $('run-search').innerHTML = 'Searching... <span>·</span>'
-  const employment = $('employment').value
-  const criteria = { role, location: $('location').value.trim() || null, keywords: $('keywords').value.split(',').map((item) => item.trim()).filter(Boolean), remote_only: $('remote-only').checked, employment_types: employment ? [employment] : [], limit: Number($('limit').value) || 25, sources }
+  const payload = {
+    candidate_profile_id: state.mode === 'matcher' && state.candidateProfile ? state.candidateProfile.profile_id : null,
+    role,
+    location: $('location').value.trim() || null,
+    keywords: $('keywords').value.split(',').map((item) => item.trim()).filter(Boolean),
+    company: $('company').value.trim() || null,
+    industry: $('industry').value.trim() || null,
+    language: $('language').value.trim() || null,
+    remote_type: $('remote-type').value || null,
+    employment_type: $('employment').value || null,
+    seniority: $('seniority').value || null,
+    min_score: Number($('min-score').value) || 0,
+    limit: Number($('limit').value) || 25,
+    sources,
+  }
   try {
-    const response = await fetch(`${API_URL}/api/searches`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ criteria }) })
+    const response = await fetch(`${API_URL}/api/search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     if (!response.ok) throw new Error(await apiError(response))
-    renderResults(await response.json())
+    const result = await response.json()
+    await loadJobsById()
+    renderResults(result)
   } catch (error) { $('result-count').textContent = error.message } finally { $('run-search').disabled = false; $('run-search').innerHTML = 'Run search <span>↗</span>' }
 }
 
 async function loadRun() {
   const runId = $('run-id').value.trim(); if (!runId) return
   $('result-count').textContent = 'Loading saved run...'
-  try {
-    const response = await fetch(`${API_URL}/api/searches/${encodeURIComponent(runId)}`)
-    if (!response.ok) throw new Error(await apiError(response))
-    renderResults(await response.json())
-  } catch (error) { $('result-count').textContent = error.message }
-}
-
-async function runMatch() {
-  if (!state.candidateProfile) return
-  $('cm-run-match').disabled = true; $('cm-run-match').innerHTML = 'Matching... <span>·</span>'
-  const filters = {
-    min_score: Number($('cm-min-score').value) || 0,
-    location: $('cm-location').value.trim() || null,
-    seniority: $('cm-seniority').value || null,
-    industry: $('cm-industry').value.trim() || null,
-    remote_type: $('cm-remote-type').value || null,
-    language: $('cm-language').value.trim() || null,
-    employment_type: $('cm-employment').value || null,
-    top_k: Number($('cm-top-k').value) || 20,
-  }
-  try {
-    await loadJobsById()
-    const response = await fetch(`${API_URL}/api/candidates/${state.candidateProfile.profile_id}/match`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(filters) })
-    if (!response.ok) throw new Error(await apiError(response))
-    renderResults(await response.json())
-  } catch (error) { $('result-count').textContent = error.message } finally { $('cm-run-match').disabled = false; $('cm-run-match').innerHTML = 'Run match <span>↗</span>' }
-}
-
-async function loadMatchRun() {
-  const runId = $('run-id').value.trim(); if (!runId) return
-  $('result-count').textContent = 'Loading saved match...'
   try {
     await loadJobsById()
     const response = await fetch(`${API_URL}/api/match-runs/${encodeURIComponent(runId)}`)
@@ -298,8 +448,7 @@ $('back-to-upload').addEventListener('click', goToUploadScreen)
 $('select-all-sources').addEventListener('click', () => { document.querySelectorAll('input[name="source"]').forEach((input) => { input.checked = true }) })
 $('deselect-all-sources').addEventListener('click', () => { document.querySelectorAll('input[name="source"]').forEach((input) => { input.checked = false }) })
 $('run-search').addEventListener('click', runSearch)
-$('cm-run-match').addEventListener('click', runMatch)
-$('load-run').addEventListener('click', () => { if (state.mode === 'matcher') loadMatchRun(); else loadRun() })
+$('load-run').addEventListener('click', loadRun)
 $('health-button').addEventListener('click', async () => { try { const response = await fetch(`${API_URL}/health`); $('health-button').innerHTML = `<span class="pulse good"></span>${response.ok ? 'API connected' : 'API issue'}` } catch { $('health-button').innerHTML = '<span class="pulse bad"></span>API offline' } })
 
 setActiveStep(0)

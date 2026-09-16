@@ -1,8 +1,9 @@
 from fastapi.testclient import TestClient
 
-from jobhunter.api import candidate_routes
+from jobhunter.api import candidate_routes, routes
 from jobhunter.jobs.schema import Job, JobSkill
 from jobhunter.main import app
+from jobhunter.models.job import EmploymentType, JobPosting
 
 client = TestClient(app)
 
@@ -127,3 +128,100 @@ def test_list_jobs_returns_seeded_job():
     assert response.status_code == 200
     job_ids = {job["job_id"] for job in response.json()}
     assert "api-test-job-1" in job_ids
+
+
+def _fake_fetch_postings(postings, source_counts):
+    def fetch(profile, criteria):
+        return postings, source_counts
+
+    return fetch
+
+
+def test_unified_search_without_profile_uses_keyword_ranking_and_stores_postings(monkeypatch):
+    monkeypatch.setattr(
+        routes.orchestrator,
+        "fetch_postings",
+        _fake_fetch_postings(
+            [
+                JobPosting(
+                    source="stub",
+                    title="Senior Data Analyst",
+                    company="Acme",
+                    location="Berlin",
+                    employment_type=EmploymentType.FULL_TIME,
+                    description="Analyze data for the growth team.",
+                    url="https://example.com/jobs/unified-1",
+                )
+            ],
+            {"stub": 1},
+        ),
+    )
+
+    response = client.post(
+        "/api/search",
+        json={"role": "Senior Data Analyst", "sources": ["stub"], "limit": 5},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["used_profile"] is False
+    assert body["source_status"] == [{"source": "stub", "status": "ok", "count": 1}]
+    assert body["results"]
+    assert body["results"][0]["overall_fit"] > 0
+    assert body["results"][0]["subscores"] == {}
+
+    # The posting from this request's fetch should now be in the jobs database, not just returned.
+    from jobhunter.jobs.from_posting import _job_id_for_url
+
+    job_id = _job_id_for_url("https://example.com/jobs/unified-1")
+    assert candidate_routes.jobs_repository.get_job(job_id) is not None
+
+
+def test_unified_search_with_profile_uses_matching_engine(monkeypatch):
+    monkeypatch.setattr(
+        routes.orchestrator,
+        "fetch_postings",
+        _fake_fetch_postings(
+            [
+                JobPosting(
+                    source="stub",
+                    title="Senior Data Analyst",
+                    company="Acme Analytics Inc.",
+                    location="Remote",
+                    is_remote=True,
+                    employment_type=EmploymentType.FULL_TIME,
+                    description="Own analytics for the growth org.",
+                    url="https://example.com/jobs/unified-2",
+                )
+            ],
+            {"stub": 1},
+        ),
+    )
+    upload = client.post(
+        "/api/candidates/upload-file",
+        files={"cv_file": ("cv.txt", _CV_TEXT.encode(), "text/plain")},
+    )
+    profile_id = upload.json()["profile_id"]
+
+    response = client.post(
+        "/api/search",
+        json={"candidate_profile_id": profile_id, "role": "Data Analyst", "sources": ["stub"], "limit": 5},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["used_profile"] is True
+    assert body["results"]
+    # subscores are only populated by the real matching engine, not the keyword-ranking fallback.
+    assert body["results"][0]["subscores"]
+
+
+def test_unified_search_missing_profile_returns_404(monkeypatch):
+    monkeypatch.setattr(routes.orchestrator, "fetch_postings", _fake_fetch_postings([], {}))
+
+    response = client.post(
+        "/api/search",
+        json={"candidate_profile_id": "does-not-exist", "role": "Engineer"},
+    )
+
+    assert response.status_code == 404
