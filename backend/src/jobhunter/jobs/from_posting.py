@@ -53,10 +53,17 @@ def convert_posting(posting: JobPosting) -> Job:
         for term in matched_skills
     ]
 
+    # Company name is checked separately from title/description (not folded into
+    # `normalized_text` above) so it only feeds industry inference, not skill matching —
+    # a company like "SAP" or "IBM" would otherwise spuriously tag every one of its postings
+    # with the matching skill regardless of what the role actually involves.
+    industry_text = normalize(f"{combined_text} {posting.company}")
     industry_tags = sorted(
-        tag for tag, phrases in DOMAIN_SIGNALS.items() if any(contains_phrase(normalized_text, phrase) for phrase in phrases)
+        tag for tag, phrases in DOMAIN_SIGNALS.items() if any(contains_phrase(industry_text, phrase) for phrase in phrases)
     )
-    seniority, _ = infer_seniority([posting.title], years=None)
+
+    years = extract_years_of_experience(posting.description)
+    seniority, _ = infer_seniority([posting.title], years=years)
 
     return Job(
         job_id=_job_id_for_url(posting.url),
@@ -73,7 +80,7 @@ def convert_posting(posting: JobPosting) -> Job:
         seniority=seniority,
         description=posting.description,
         skills=skills,
-        years_experience_min=extract_years_of_experience(posting.description),
+        years_experience_min=years,
         years_experience_max=None,
         updated_at=datetime.now(UTC).isoformat(),
     )

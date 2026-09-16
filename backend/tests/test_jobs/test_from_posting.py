@@ -61,6 +61,48 @@ def test_convert_posting_years_experience_extracted():
     assert job.years_experience_max is None
 
 
+def test_convert_posting_seniority_falls_back_to_years_from_description():
+    """No title keyword ('Data Analyst' matches no seniority tier), so seniority should fall
+    back to the years-of-experience the description does state, rather than staying blank."""
+    job = convert_posting(_posting(
+        title="Data Analyst",
+        description="Looking for someone with 2+ years of experience.",
+    ))
+    assert job.seniority == "mid"
+
+
+def test_convert_posting_seniority_blank_when_no_title_keyword_or_years():
+    job = convert_posting(_posting(
+        title="Data Analyst",
+        description="General business role, no explicit level or experience mentioned.",
+    ))
+    assert job.seniority is None
+
+
+def test_convert_posting_industry_inferred_from_company_name():
+    """Description has no domain keywords, but the company name does — industry should still
+    be inferred from it rather than left blank."""
+    job = convert_posting(_posting(
+        title="Account Manager",
+        company="Muster Consulting GmbH",
+        description="General business role, no explicit domain keywords here.",
+    ))
+    assert job.industry == "consulting"
+
+
+def test_convert_posting_company_name_does_not_leak_into_skills():
+    """Company-derived industry signal must stay separate from skill matching, or a company
+    like 'AWS Solutions GmbH' would spuriously tag every one of its postings with the 'aws'
+    skill regardless of what the role actually involves."""
+    job = convert_posting(_posting(
+        title="Office Manager",
+        company="AWS Solutions GmbH",
+        description="General administrative tasks, nothing technical.",
+    ))
+    skill_names = {skill.normalized_name.lower() for skill in job.skills}
+    assert "aws" not in skill_names
+
+
 def test_convert_posting_never_fabricates_requirements_or_certs_or_languages():
     job = convert_posting(_posting())
     assert job.requirements_must == []
