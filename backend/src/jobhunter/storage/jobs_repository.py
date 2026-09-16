@@ -196,12 +196,21 @@ class JobsRepository:
         "fails the filter" would silently exclude most of the database on any of these filters.
         An untagged job passes through instead; only a job with a real, conflicting tag is
         excluded. Same principle for `language` below, via the job_languages side table.
+
+        `locations`/`languages` (plural) are OR'd together when given -- a job matching any one
+        of several selected countries/languages is kept, needed so a search spanning multiple
+        countries doesn't have its own broader fetch immediately undone by a filter that only
+        kept one of them. `location`/`language` (singular) stay as a fallback for callers that
+        never populate the plural fields (GET /api/jobs, POST /candidates/{id}/match).
         """
         clauses: list[str] = []
         params: list[object] = []
 
         if filters:
-            if filters.location:
+            if filters.locations:
+                clauses.append("(" + " OR ".join("location LIKE ?" for _ in filters.locations) + ")")
+                params.extend(f"%{location}%" for location in filters.locations)
+            elif filters.location:
                 clauses.append("location LIKE ?")
                 params.append(f"%{filters.location}%")
             if filters.seniority:
@@ -231,18 +240,24 @@ class JobsRepository:
             rows = conn.execute(query, params).fetchall()
             job_ids = {row[0] for row in rows}
 
-            if filters and filters.language:
+            language_values = (
+                filters.languages if (filters and filters.languages)
+                else ([filters.language] if (filters and filters.language) else [])
+            )
+            if language_values:
                 all_language_job_ids = {
                     row[0] for row in conn.execute("SELECT DISTINCT job_id FROM job_languages").fetchall()
                 }
+                placeholders = ",".join("?" for _ in language_values)
                 matching_language_job_ids = {
                     row[0]
                     for row in conn.execute(
-                        "SELECT job_id FROM job_languages WHERE language = ?", (filters.language.lower(),)
+                        f"SELECT job_id FROM job_languages WHERE language IN ({placeholders})",
+                        [language.lower() for language in language_values],
                     ).fetchall()
                 }
                 # A job with no stated language requirement at all isn't disqualified — only
-                # exclude a job that has language data but none of it matches the request.
+                # exclude a job that has language data but none of it matches any requested language.
                 job_ids -= all_language_job_ids - matching_language_job_ids
 
         return [Job.model_validate_json(job_json) for job_id, job_json in rows if job_id in job_ids]

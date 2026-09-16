@@ -79,6 +79,26 @@ class JobSearchOrchestrator:
 
         return postings, source_counts
 
+    def fetch_postings_for_locations(
+        self, profile: CandidateProfile, criteria: SearchCriteria, locations: list[str]
+    ) -> tuple[list[JobPosting], dict[str, int]]:
+        """Calls `fetch_postings` once per location string and merges the results -- lets a
+        search spanning several countries actually query each one live, rather than only ever
+        narrowing a single request. An empty `locations` list falls back to one call with
+        `criteria.location` untouched, so callers that never populate a location list (the old
+        single-location flow) see no behavior change at all."""
+        if not locations:
+            return self.fetch_postings(profile, criteria)
+
+        all_postings: list[JobPosting] = []
+        combined_counts: dict[str, int] = {}
+        for location in locations:
+            postings, counts = self.fetch_postings(profile, criteria.model_copy(update={"location": location}))
+            all_postings.extend(postings)
+            for source, count in counts.items():
+                combined_counts[source] = combined_counts.get(source, 0) + count
+        return all_postings, combined_counts
+
     def run_search(self, profile: CandidateProfile, criteria: SearchCriteria) -> SearchOutcome:
         postings, source_counts = self.fetch_postings(profile, criteria)
         unique_postings = deduplicate_postings(postings)

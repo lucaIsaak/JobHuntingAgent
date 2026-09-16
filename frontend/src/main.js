@@ -10,6 +10,10 @@ const state = {
   jobsById: {},
   feedbackByJobId: {},
   skillsCatalog: null,
+  searchMetadata: null, // { regions: {name: [countries]}, industries: [...], languages: [...] }
+  selectedRegions: [],
+  selectedCountries: [],
+  selectedLanguages: [],
 }
 
 const SENIORITY_LEVELS = ['intern', 'junior', 'mid', 'senior', 'lead', 'manager', 'director', 'executive']
@@ -78,15 +82,27 @@ app.innerHTML = `
             <p class="panel-copy" id="search-panel-copy">Tell the agent what a good next role looks like. Role is the only thing required.</p>
             <div class="field-grid">
               <div class="field full"><label for="role">Role <span>required</span></label><input id="role" placeholder="e.g. Backend Engineer" /></div>
-              <div class="field"><label for="location">Location</label><input id="location" placeholder="e.g. Berlin" /></div>
               <div class="field"><label for="keywords">Keywords</label><input id="keywords" placeholder="python, APIs" /></div>
               <div class="field"><label for="company">Company</label><input id="company" placeholder="e.g. Stripe" /></div>
-              <div class="field"><label for="industry">Industry</label><input id="industry" placeholder="e.g. fintech" /></div>
-              <div class="field"><label for="language">Language</label><input id="language" placeholder="e.g. German" /></div>
+              <div class="field"><label for="industry-select">Industry</label><select id="industry-select"><option value="">Loading industries...</option></select></div>
               <div class="field"><label for="remote-type">Remote</label><select id="remote-type"><option value="">Any</option><option value="onsite">Onsite</option><option value="hybrid">Hybrid</option><option value="remote">Remote</option></select></div>
               <div class="field"><label for="employment">Employment type</label><select id="employment"><option value="">Any employment type</option>${EMPLOYMENT_TYPES.map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}</select></div>
               <div class="field"><label for="seniority">Seniority</label><select id="seniority"><option value="">Any seniority</option>${SENIORITY_LEVELS.map((level) => `<option value="${level}">${level[0].toUpperCase()}${level.slice(1)}</option>`).join('')}</select></div>
               <div class="field"><label for="min-score">Min score</label><input type="number" id="min-score" min="0" max="100" placeholder="0" /></div>
+            </div>
+            <fieldset class="source-filter"><legend>Region</legend><div class="source-options" id="region-options"><span class="profile-hint">Loading regions...</span></div></fieldset>
+            <div class="field-grid">
+              <div class="field full">
+                <label>Country <span>narrowed by region above</span></label>
+                <div class="cm-tag-list" id="country-tag-list"></div>
+                <div class="cm-tag-search"><input type="text" id="country-search" placeholder="Add a country..." autocomplete="off" /><div class="cm-tag-suggestions" id="country-suggestions" hidden></div></div>
+              </div>
+              <div class="field"><label for="city">City</label><input id="city" placeholder="e.g. Berlin" /></div>
+              <div class="field full">
+                <label>Language</label>
+                <div class="cm-tag-list" id="language-tag-list"></div>
+                <div class="cm-tag-search"><input type="text" id="language-search" placeholder="Add a language..." autocomplete="off" /><div class="cm-tag-suggestions" id="language-suggestions" hidden></div></div>
+              </div>
             </div>
             <div class="limit-row"><label for="limit">Results <span>1–200</span></label><input type="number" id="limit" min="1" max="200" value="25" /></div>
             <fieldset class="source-filter"><legend>Sources</legend><div class="source-actions"><button type="button" class="text-button" id="select-all-sources">Select all</button><button type="button" class="text-button" id="deselect-all-sources">Deselect all</button></div><div class="source-options">${[
@@ -164,6 +180,114 @@ async function ensureSkillsCatalog() {
     state.skillsCatalog = response.ok ? await response.json() : []
   } catch { state.skillsCatalog = [] }
   return state.skillsCatalog
+}
+
+// --- Region / Country / Industry / Language search filters ---
+
+const INDUSTRY_LABEL_OVERRIDES = {
+  ai_ml: 'AI / ML', hr_tech: 'HR Tech', developer_tools: 'Developer Tools',
+  productivity_saas: 'Productivity SaaS', marketplace_delivery: 'Marketplace & Delivery',
+  crypto_web3: 'Crypto / Web3',
+}
+const industryLabel = (tag) => INDUSTRY_LABEL_OVERRIDES[tag] || `${tag[0].toUpperCase()}${tag.slice(1)}`
+
+async function ensureSearchMetadata() {
+  if (state.searchMetadata) return state.searchMetadata
+  try {
+    const response = await fetch(`${API_URL}/api/search-metadata`)
+    state.searchMetadata = response.ok ? await response.json() : { regions: {}, industries: [], languages: [] }
+  } catch { state.searchMetadata = { regions: {}, industries: [], languages: [] } }
+  renderSearchMetadataOptions()
+  return state.searchMetadata
+}
+
+function availableCountries() {
+  const regions = state.searchMetadata?.regions || {}
+  if (!state.selectedRegions.length) return [...new Set(Object.values(regions).flat())].sort()
+  return [...new Set(state.selectedRegions.flatMap((region) => regions[region] || []))].sort()
+}
+
+function renderSearchMetadataOptions() {
+  const metadata = state.searchMetadata
+  if (!metadata) return
+
+  const regionNames = Object.keys(metadata.regions).sort()
+  $('region-options').innerHTML = regionNames.map((name) => `<label><input type="checkbox" name="region" value="${name}" /><span>${name}</span></label>`).join('')
+  document.querySelectorAll('input[name="region"]').forEach((input) => {
+    input.addEventListener('change', () => {
+      state.selectedRegions = [...document.querySelectorAll('input[name="region"]:checked')].map((el) => el.value)
+      const allowed = new Set(availableCountries())
+      state.selectedCountries = state.selectedCountries.filter((country) => allowed.has(country))
+      renderCountryTags()
+    })
+  })
+
+  $('industry-select').innerHTML = `<option value="">Any industry</option>${metadata.industries.map((tag) => `<option value="${tag}">${industryLabel(tag)}</option>`).join('')}`
+
+  renderCountryTags()
+  renderLanguageTags()
+}
+
+function renderCountryTags() {
+  $('country-tag-list').innerHTML = state.selectedCountries.map((country, index) => `<span class="cm-tag">${country}<button type="button" class="cm-tag-remove" data-country-index="${index}" aria-label="Remove ${country}">×</button></span>`).join('')
+  document.querySelectorAll('.cm-tag-remove[data-country-index]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.selectedCountries.splice(Number(button.dataset.countryIndex), 1)
+      renderCountryTags()
+    })
+  })
+}
+
+function wireCountrySearch() {
+  const search = $('country-search')
+  const suggestions = $('country-suggestions')
+  search.addEventListener('input', () => {
+    const query = search.value.trim().toLowerCase()
+    if (!query) { suggestions.hidden = true; return }
+    const options = availableCountries().filter((country) => country.toLowerCase().includes(query) && !state.selectedCountries.includes(country)).slice(0, 8)
+    if (!options.length) { suggestions.hidden = true; return }
+    suggestions.hidden = false
+    suggestions.innerHTML = options.map((country) => `<button type="button" class="cm-suggestion" data-value="${country}">${country}</button>`).join('')
+    suggestions.querySelectorAll('.cm-suggestion').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.selectedCountries.push(button.dataset.value)
+        search.value = ''
+        suggestions.hidden = true
+        renderCountryTags()
+      })
+    })
+  })
+}
+
+function renderLanguageTags() {
+  $('language-tag-list').innerHTML = state.selectedLanguages.map((language, index) => `<span class="cm-tag">${language}<button type="button" class="cm-tag-remove" data-lang-tag-index="${index}" aria-label="Remove ${language}">×</button></span>`).join('')
+  document.querySelectorAll('.cm-tag-remove[data-lang-tag-index]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.selectedLanguages.splice(Number(button.dataset.langTagIndex), 1)
+      renderLanguageTags()
+    })
+  })
+}
+
+function wireLanguageSearch() {
+  const search = $('language-search')
+  const suggestions = $('language-suggestions')
+  search.addEventListener('input', () => {
+    const query = search.value.trim().toLowerCase()
+    if (!query) { suggestions.hidden = true; return }
+    const options = (state.searchMetadata?.languages || []).filter((language) => language.toLowerCase().includes(query) && !state.selectedLanguages.includes(language)).slice(0, 8)
+    if (!options.length) { suggestions.hidden = true; return }
+    suggestions.hidden = false
+    suggestions.innerHTML = options.map((language) => `<button type="button" class="cm-suggestion" data-value="${language}">${language}</button>`).join('')
+    suggestions.querySelectorAll('.cm-suggestion').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.selectedLanguages.push(button.dataset.value)
+        search.value = ''
+        suggestions.hidden = true
+        renderLanguageTags()
+      })
+    })
+  })
 }
 
 function renderCandidateSummary(profile) {
@@ -436,11 +560,13 @@ async function runSearch() {
   const payload = {
     candidate_profile_id: state.mode === 'matcher' && state.candidateProfile ? state.candidateProfile.profile_id : null,
     role,
-    location: $('location').value.trim() || null,
+    regions: state.selectedRegions,
+    countries: state.selectedCountries,
+    city: $('city').value.trim() || null,
     keywords: $('keywords').value.split(',').map((item) => item.trim()).filter(Boolean),
     company: $('company').value.trim() || null,
-    industry: $('industry').value.trim() || null,
-    language: $('language').value.trim() || null,
+    industry: $('industry-select').value || null,
+    languages: state.selectedLanguages,
     remote_type: $('remote-type').value || null,
     employment_type: $('employment').value || null,
     seniority: $('seniority').value || null,
@@ -486,6 +612,10 @@ $('deselect-all-sources').addEventListener('click', () => { document.querySelect
 $('run-search').addEventListener('click', runSearch)
 $('load-run').addEventListener('click', loadRun)
 $('health-button').addEventListener('click', async () => { try { const response = await fetch(`${API_URL}/health`); $('health-button').innerHTML = `<span class="pulse good"></span>${response.ok ? 'API connected' : 'API issue'}` } catch { $('health-button').innerHTML = '<span class="pulse bad"></span>API offline' } })
+
+wireCountrySearch()
+wireLanguageSearch()
+ensureSearchMetadata()
 
 setActiveStep(0)
 

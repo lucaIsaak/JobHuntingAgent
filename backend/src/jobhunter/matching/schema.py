@@ -66,6 +66,13 @@ class MatchFilters(BaseModel):
     employment_type: str | None = None
     title: str | None = None
     company: str | None = None
+    # Additive multi-value counterparts to `location`/`language` above, used by the unified
+    # search's region/country/multi-language picker -- kept alongside rather than replacing the
+    # singular fields so GET /api/jobs and POST /candidates/{id}/match (which only ever set the
+    # singular ones) keep working unchanged. `prefilter()` OR's these together when non-empty
+    # and only falls back to the singular field otherwise.
+    locations: list[str] = Field(default_factory=list)
+    languages: list[str] = Field(default_factory=list)
 
 
 class MatchResult(BaseModel):

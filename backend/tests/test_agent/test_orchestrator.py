@@ -88,3 +88,45 @@ def test_fetch_postings_reuses_source_selection_used_by_run_search():
 
     assert [posting.source for posting in postings] == ["wanted"]
     assert source_counts == {"wanted": 1}
+
+
+class _LocationAwareScraper:
+    """Records the `criteria.location` it was called with -- lets a test prove each location in
+    a multi-location fetch actually reached the scraper as its own separate call."""
+
+    def __init__(self, sources):
+        self.sources = sources
+        self.seen_locations: list[str | None] = []
+
+    def search(self, criteria):
+        self.seen_locations.append(criteria.location)
+        return [_posting(self.sources[0], title=f"Job in {criteria.location}")]
+
+
+def test_fetch_postings_for_locations_queries_each_location_and_merges():
+    scraper = _LocationAwareScraper(("stub",))
+    orchestrator = JobSearchOrchestrator(scrapers=[scraper])
+
+    postings, source_counts = orchestrator.fetch_postings_for_locations(
+        profile=_profile(),
+        criteria=SearchCriteria(role="Engineer"),
+        locations=["Germany", "France", "Spain"],
+    )
+
+    assert scraper.seen_locations == ["Germany", "France", "Spain"]
+    assert [posting.title for posting in postings] == ["Job in Germany", "Job in France", "Job in Spain"]
+    assert source_counts == {"stub": 3}
+
+
+def test_fetch_postings_for_locations_empty_list_falls_back_to_a_single_call():
+    scraper = _LocationAwareScraper(("stub",))
+    orchestrator = JobSearchOrchestrator(scrapers=[scraper])
+
+    postings, source_counts = orchestrator.fetch_postings_for_locations(
+        profile=_profile(),
+        criteria=SearchCriteria(role="Engineer", location="Berlin"),
+        locations=[],
+    )
+
+    assert scraper.seen_locations == ["Berlin"]  # criteria.location untouched, exactly one call
+    assert source_counts == {"stub": 1}

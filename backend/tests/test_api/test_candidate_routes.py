@@ -230,6 +230,79 @@ def test_unified_search_with_profile_uses_matching_engine(monkeypatch):
     assert body["results"][0]["subscores"]
 
 
+def _tracking_fetch_postings(postings_by_location=None, default_postings=None, default_counts=None):
+    """Records every `criteria.location` it's called with -- lets a test prove
+    fetch_postings_for_locations actually issued one real call per selected country."""
+    seen_locations = []
+
+    def fetch(profile, criteria):
+        seen_locations.append(criteria.location)
+        if postings_by_location and criteria.location in postings_by_location:
+            return postings_by_location[criteria.location], {"stub": 1}
+        return default_postings or [], default_counts or {"stub": 0}
+
+    fetch.seen_locations = seen_locations
+    return fetch
+
+
+def test_unified_search_with_countries_queries_each_country_live(monkeypatch):
+    fake_fetch = _tracking_fetch_postings(
+        postings_by_location={
+            "Germany": [
+                JobPosting(
+                    source="stub", title="Engineer DE", company="Acme DE", location="Berlin, Germany",
+                    employment_type=EmploymentType.FULL_TIME, description="Role in Germany.",
+                    url="https://example.com/jobs/country-de",
+                )
+            ],
+            "France": [
+                JobPosting(
+                    source="stub", title="Engineer FR", company="Acme FR", location="Paris, France",
+                    employment_type=EmploymentType.FULL_TIME, description="Role in France.",
+                    url="https://example.com/jobs/country-fr",
+                )
+            ],
+        }
+    )
+    monkeypatch.setattr(routes.orchestrator, "fetch_postings", fake_fetch)
+
+    response = client.post(
+        "/api/search",
+        json={"role": "Engineer", "sources": ["stub"], "countries": ["Germany", "France"], "limit": 10},
+    )
+
+    assert response.status_code == 200
+    assert fake_fetch.seen_locations == ["Germany", "France"]
+    job_ids = {result["job_id"] for result in response.json()["results"]}
+    from jobhunter.jobs.from_posting import _job_id_for_url
+    assert _job_id_for_url("https://example.com/jobs/country-de") in job_ids
+    assert _job_id_for_url("https://example.com/jobs/country-fr") in job_ids
+
+
+def test_unified_search_with_region_expands_to_its_countries(monkeypatch):
+    fake_fetch = _tracking_fetch_postings()
+    monkeypatch.setattr(routes.orchestrator, "fetch_postings", fake_fetch)
+
+    response = client.post(
+        "/api/search",
+        json={"role": "Engineer", "sources": ["stub"], "regions": ["Iberia"], "limit": 10},
+    )
+
+    assert response.status_code == 200
+    assert sorted(fake_fetch.seen_locations) == ["Portugal", "Spain"]
+
+
+def test_get_search_metadata_returns_regions_industries_and_languages():
+    response = client.get("/api/search-metadata")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "Iberia" in body["regions"]
+    assert sorted(body["regions"]["Iberia"]) == ["Portugal", "Spain"]
+    assert "consulting" in body["industries"]
+    assert "German" in body["languages"]
+
+
 def test_unified_search_missing_profile_returns_404(monkeypatch):
     monkeypatch.setattr(routes.orchestrator, "fetch_postings", _fake_fetch_postings([], {}))
 

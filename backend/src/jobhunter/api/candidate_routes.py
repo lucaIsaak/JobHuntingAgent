@@ -15,9 +15,10 @@ from pydantic import BaseModel, Field
 
 from jobhunter.api import routes
 from jobhunter.candidate import extractor
-from jobhunter.candidate.normalize import SKILLS_CATALOG, normalize_skill
+from jobhunter.candidate.normalize import DOMAIN_SIGNALS, SKILLS_CATALOG, normalize_skill
 from jobhunter.candidate.schema import Candidate, CandidateProfile
 from jobhunter.config import settings
+from jobhunter.geo.regions import LANGUAGE_OPTIONS, REGIONS, countries_for_regions
 from jobhunter.jobs.from_posting import convert_posting
 from jobhunter.jobs.schema import Job
 from jobhunter.matching import engine
@@ -148,18 +149,25 @@ def _apply_preference_bonus(results: list[MatchResult]) -> list[MatchResult]:
 class UnifiedSearchRequest(BaseModel):
     """One request shape for both entry points: with a candidate_profile_id, results come from
     the full matching engine; without one, from simple keyword relevance. Either way, live
-    postings are fetched first and written into the same jobs database before filtering."""
+    postings are fetched first and written into the same jobs database before filtering.
+
+    `regions`/`countries`/`city` replace the old single free-text `location` field: explicit
+    `countries` win when given, else `countries_for_regions(regions)` expands the picked
+    region(s); each gets queried live as its own search (see `_build_location_queries` below and
+    `orchestrator.fetch_postings_for_locations`), not just used to narrow one request."""
 
     candidate_profile_id: str | None = None
     role: str = Field(min_length=2)
     keywords: list[str] = Field(default_factory=list)
-    location: str | None = None
+    regions: list[str] = Field(default_factory=list)
+    countries: list[str] = Field(default_factory=list)
+    city: str | None = None
     remote_type: str | None = None  # onsite | hybrid | remote
     employment_type: str | None = None
     seniority: str | None = None
     industry: str | None = None
     company: str | None = None
-    language: str | None = None
+    languages: list[str] = Field(default_factory=list)
     min_score: float = 0.0
     limit: int = 20
     sources: list[str] = Field(default_factory=list)
@@ -171,6 +179,36 @@ class UnifiedSearchResponse(BaseModel):
     filters_used: MatchFilters
     results: list[MatchResult]
     source_status: list[routes.SourceStatus] = Field(default_factory=list)
+
+
+def _build_location_queries(payload: UnifiedSearchRequest) -> list[str]:
+    """Turns the structured region/country/city picks into the list of location strings to
+    search live, one per country -- explicit `countries` win over region-expansion; `city` (when
+    given) gets combined into each; no selection at all returns an empty list, which callers
+    treat as "no location constraint" (today's unchanged behavior)."""
+    countries = payload.countries or countries_for_regions(payload.regions)
+    if not countries:
+        return [payload.city] if payload.city else []
+    if payload.city:
+        return [f"{payload.city}, {country}" for country in countries]
+    return countries
+
+
+class SearchMetadata(BaseModel):
+    regions: dict[str, list[str]]
+    industries: list[str]
+    languages: list[str]
+
+
+@router.get("/search-metadata", response_model=SearchMetadata)
+def get_search_metadata() -> SearchMetadata:
+    """Static option lists for the search form's Region/Country, Industry, and Language
+    pickers, fetched once and cached client-side (same pattern as GET /api/skills-catalog)."""
+    return SearchMetadata(
+        regions={name: list(countries) for name, countries in REGIONS.items()},
+        industries=sorted(DOMAIN_SIGNALS.keys()),
+        languages=list(LANGUAGE_OPTIONS),
+    )
 
 
 @router.post("/search", response_model=UnifiedSearchResponse)
@@ -191,7 +229,6 @@ def unified_search(payload: UnifiedSearchRequest) -> UnifiedSearchResponse:
     )
     criteria = SearchCriteria(
         role=payload.role,
-        location=payload.location,
         keywords=payload.keywords,
         remote_only=payload.remote_type == "remote",
         employment_types=[payload.employment_type] if payload.employment_type else [],
@@ -199,7 +236,10 @@ def unified_search(payload: UnifiedSearchRequest) -> UnifiedSearchResponse:
         sources=payload.sources,
     )
 
-    postings, source_counts = routes.orchestrator.fetch_postings(scraper_profile, criteria)
+    location_queries = _build_location_queries(payload)
+    postings, source_counts = routes.orchestrator.fetch_postings_for_locations(
+        scraper_profile, criteria, location_queries
+    )
 
     try:
         jobs_repository.upsert_jobs([convert_posting(posting) for posting in postings])
@@ -215,11 +255,11 @@ def unified_search(payload: UnifiedSearchRequest) -> UnifiedSearchResponse:
 
     filters = MatchFilters(
         min_score=payload.min_score,
-        location=payload.location,
+        locations=location_queries,
         seniority=payload.seniority,
         industry=payload.industry,
         remote_type=payload.remote_type,
-        language=payload.language,
+        languages=payload.languages,
         employment_type=payload.employment_type,
         title=payload.role,
         company=payload.company,

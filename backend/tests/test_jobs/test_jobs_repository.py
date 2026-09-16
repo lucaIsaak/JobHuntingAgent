@@ -139,6 +139,62 @@ def test_set_job_feedback_none_clears_rating(tmp_path):
     assert repo.all_job_feedback() == {}
 
 
+def test_prefilter_by_locations_ors_multiple_countries(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(job_id="j1", location="Berlin, Germany"))
+    repo.upsert_job(_job(job_id="j2", location="Paris, France"))
+    repo.upsert_job(_job(job_id="j3", location="Tokyo, Japan"))
+    results = repo.prefilter(MatchFilters(locations=["Germany", "France"]))
+    assert {job.job_id for job in results} == {"j1", "j2"}
+
+
+def test_prefilter_by_locations_falls_back_to_singular_location(tmp_path):
+    """Callers that only ever set the legacy singular field (GET /api/jobs, the CV-match
+    endpoint) must keep working unchanged."""
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(job_id="j1", location="Berlin, Germany"))
+    repo.upsert_job(_job(job_id="j2", location="Paris, France"))
+    results = repo.prefilter(MatchFilters(location="Berlin"))
+    assert {job.job_id for job in results} == {"j1"}
+
+
+def test_prefilter_by_languages_ors_multiple_languages(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(
+        job_id="j1", languages_required=[JobLanguageRequirement(language="German", level="C1")]
+    ))
+    repo.upsert_job(_job(
+        job_id="j2", languages_required=[JobLanguageRequirement(language="French", level="B2")]
+    ))
+    repo.upsert_job(_job(
+        job_id="j3", languages_required=[JobLanguageRequirement(language="Japanese", level="B2")]
+    ))
+    results = repo.prefilter(MatchFilters(languages=["German", "French"]))
+    assert {job.job_id for job in results} == {"j1", "j2"}
+
+
+def test_prefilter_by_languages_does_not_exclude_untagged_jobs(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(
+        job_id="j1", languages_required=[JobLanguageRequirement(language="German", level="C1")]
+    ))
+    repo.upsert_job(_job(job_id="j2", languages_required=[]))
+    results = repo.prefilter(MatchFilters(languages=["German", "French"]))
+    assert {job.job_id for job in results} == {"j1", "j2"}
+
+
+def test_prefilter_by_languages_falls_back_to_singular_language(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(
+        job_id="j1", languages_required=[JobLanguageRequirement(language="German", level="C1")]
+    ))
+    repo.upsert_job(_job(
+        job_id="j2", languages_required=[JobLanguageRequirement(language="French", level="B2")]
+    ))
+    results = repo.prefilter(MatchFilters(language="German"))
+    assert {job.job_id for job in results} == {"j1"}
+
+
 def test_all_job_feedback_reflects_multiple_jobs(tmp_path):
     repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
     repo.upsert_job(_job(job_id="j1"))
