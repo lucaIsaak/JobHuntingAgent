@@ -154,7 +154,14 @@ class JobsRepository:
 
     def prefilter(self, filters: MatchFilters | None = None, required_languages: Sequence[str] = ()) -> list[Job]:
         """Structured SQL prefilter: user-supplied filters plus (optionally) a language
-        requirement gate, both resolved against real columns/side tables."""
+        requirement gate, both resolved against real columns/side tables.
+
+        `seniority` and `industry` are frequently NULL for live-scraped postings (the title
+        alone often isn't enough to confidently infer either) — treating an untagged job as
+        "fails the filter" would silently exclude most of the database on any of these filters.
+        An untagged job passes through instead; only a job with a real, conflicting tag is
+        excluded. Same principle for `language` below, via the job_languages side table.
+        """
         clauses: list[str] = []
         params: list[object] = []
 
@@ -163,10 +170,10 @@ class JobsRepository:
                 clauses.append("location LIKE ?")
                 params.append(f"%{filters.location}%")
             if filters.seniority:
-                clauses.append("seniority = ?")
+                clauses.append("(seniority = ? OR seniority IS NULL)")
                 params.append(filters.seniority)
             if filters.industry:
-                clauses.append("industry = ?")
+                clauses.append("(industry = ? OR industry IS NULL)")
                 params.append(filters.industry)
             if filters.remote_type:
                 clauses.append("remote_type = ?")
@@ -190,13 +197,18 @@ class JobsRepository:
             job_ids = {row[0] for row in rows}
 
             if filters and filters.language:
-                language_job_ids = {
+                all_language_job_ids = {
+                    row[0] for row in conn.execute("SELECT DISTINCT job_id FROM job_languages").fetchall()
+                }
+                matching_language_job_ids = {
                     row[0]
                     for row in conn.execute(
                         "SELECT job_id FROM job_languages WHERE language = ?", (filters.language.lower(),)
                     ).fetchall()
                 }
-                job_ids &= language_job_ids
+                # A job with no stated language requirement at all isn't disqualified — only
+                # exclude a job that has language data but none of it matches the request.
+                job_ids -= all_language_job_ids - matching_language_job_ids
 
         return [Job.model_validate_json(job_json) for job_id, job_json in rows if job_id in job_ids]
 

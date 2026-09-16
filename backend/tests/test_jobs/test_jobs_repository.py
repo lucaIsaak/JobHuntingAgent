@@ -47,14 +47,47 @@ def test_prefilter_by_remote_type_and_seniority(tmp_path):
     assert {job.job_id for job in results} == {"j1"}
 
 
-def test_prefilter_by_language(tmp_path):
+def test_prefilter_by_language_matches_stated_requirement(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(
+        job_id="j1", languages_required=[JobLanguageRequirement(language="German", level="C1")]
+    ))
+    repo.upsert_job(_job(
+        job_id="j2", languages_required=[JobLanguageRequirement(language="French", level="B2")]
+    ))
+    results = repo.prefilter(MatchFilters(language="German"))
+    assert {job.job_id for job in results} == {"j1"}
+
+
+def test_prefilter_by_language_does_not_exclude_untagged_jobs(tmp_path):
+    """Live-scraped postings almost never carry real language data — a job with no stated
+    language requirement at all must not be excluded by this filter, only a job that states a
+    requirement and it doesn't match."""
     repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
     repo.upsert_job(_job(
         job_id="j1", languages_required=[JobLanguageRequirement(language="German", level="C1")]
     ))
     repo.upsert_job(_job(job_id="j2", languages_required=[]))
     results = repo.prefilter(MatchFilters(language="German"))
-    assert {job.job_id for job in results} == {"j1"}
+    assert {job.job_id for job in results} == {"j1", "j2"}
+
+
+def test_prefilter_by_seniority_does_not_exclude_untagged_jobs(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(job_id="j1", seniority="junior"))
+    repo.upsert_job(_job(job_id="j2", seniority="senior"))
+    repo.upsert_job(_job(job_id="j3", seniority=None))
+    results = repo.prefilter(MatchFilters(seniority="junior"))
+    assert {job.job_id for job in results} == {"j1", "j3"}
+
+
+def test_prefilter_by_industry_does_not_exclude_untagged_jobs(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(job_id="j1", industry="fintech"))
+    repo.upsert_job(_job(job_id="j2", industry="marketing"))
+    repo.upsert_job(_job(job_id="j3", industry=None))
+    results = repo.prefilter(MatchFilters(industry="fintech"))
+    assert {job.job_id for job in results} == {"j1", "j3"}
 
 
 def test_job_ids_matching_skills(tmp_path):
