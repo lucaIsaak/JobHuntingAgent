@@ -39,7 +39,6 @@ SOURCE_FILE = {
     "bundesagentur": SCRAPERS_DIR / "bundesagentur.py",
     "greenhouse": SCRAPERS_DIR / "company_boards.py",
     "lever": SCRAPERS_DIR / "company_boards.py",
-    "glassdoor": SCRAPERS_DIR / "glassdoor.py",
 }
 
 # The class in each file that actually implements the source, so a trial run
@@ -53,7 +52,6 @@ SOURCE_CLASS = {
     "bundesagentur": "BundesagenturScraper",
     "greenhouse": "CompanyBoardScraper",
     "lever": "CompanyBoardScraper",
-    "glassdoor": "GlassdoorScraper",
 }
 
 _CHECK_CRITERIA = SearchCriteria(role="Software Engineer", limit=10)
