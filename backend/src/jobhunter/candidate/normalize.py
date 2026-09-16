@@ -20,7 +20,9 @@ from jobhunter.services.profile_extractor import (
 
 __all__ = [
     "DOMAIN_SIGNALS",
+    "LANGUAGE_DISPLAY",
     "LANGUAGE_LEVELS",
+    "LANGUAGE_NAMES",
     "SECTION_HEADERS",
     "SKILLS_CATALOG",
     "SKILL_SYNONYMS",
@@ -384,6 +386,22 @@ LANGUAGE_LEVELS: dict[str, int] = {
 
 def language_level_rank(level: str) -> int:
     return LANGUAGE_LEVELS.get(level.strip().lower(), 0)
+
+
+# Language names in the languages a CV or job posting is realistically written in (en/de/fr/es),
+# shared between the CV extractor's own-languages parsing and the job side's requirement parsing
+# so both sides recognize the same set of names.
+LANGUAGE_NAMES: tuple[str, ...] = (
+    "english", "german", "french", "spanish", "italian", "portuguese", "dutch", "mandarin",
+    "chinese", "japanese", "korean", "russian", "arabic", "polish", "turkish", "hindi",
+    "deutsch", "englisch", "französisch", "spanisch", "français", "anglais", "allemand",
+    "espagnol", "inglés", "alemán", "francés",
+)
+LANGUAGE_DISPLAY: dict[str, str] = {
+    "deutsch": "German", "englisch": "English", "französisch": "French", "spanisch": "Spanish",
+    "français": "French", "anglais": "English", "allemand": "German", "espagnol": "Spanish",
+    "inglés": "English", "alemán": "German", "francés": "French",
+}
 
 
 # ---------------------------------------------------------------------------

@@ -103,13 +103,56 @@ def test_convert_posting_company_name_does_not_leak_into_skills():
     assert "aws" not in skill_names
 
 
-def test_convert_posting_never_fabricates_requirements_or_certs_or_languages():
+def test_convert_posting_never_fabricates_requirements_or_certs():
+    """Skill importance, general requirement text, certifications, and education stay
+    unguessed — free-text postings give no reliable must-have/nice-to-have signal for these,
+    unlike language (see the test_convert_posting_*_language* tests below), which is usually
+    stated plainly."""
     job = convert_posting(_posting())
     assert job.requirements_must == []
     assert job.requirements_nice == []
-    assert job.languages_required == []
     assert job.required_certifications == []
     assert job.education_requirements == []
+
+
+def test_convert_posting_extracts_language_with_explicit_required_cue():
+    job = convert_posting(_posting(
+        description="You need to speak German and English, French is a plus."
+    ))
+    required = {req.language for req in job.languages_required}
+    assert required == {"German", "English"}
+
+
+def test_convert_posting_does_not_require_language_from_bare_mention():
+    """No 'required'/'must'/etc. cue anywhere near the language names — a job where the team
+    just happens to work in English and German isn't the same as the candidate being required
+    to speak either, so this must stay unrecorded rather than guessed."""
+    job = convert_posting(_posting(
+        description="The team communicates in English and German on a daily basis."
+    ))
+    assert job.languages_required == []
+
+
+def test_convert_posting_excludes_language_when_cues_conflict_in_same_clause():
+    """A single clause carrying both a required-sounding word and an optional-sounding word is
+    ambiguous — treated as not-required rather than guessed either way."""
+    job = convert_posting(_posting(
+        description="German is required and nice to have for this role."
+    ))
+    assert job.languages_required == []
+
+
+def test_convert_posting_language_level_detected_when_stated():
+    job = convert_posting(_posting(description="You must speak German at C1 level."))
+    assert len(job.languages_required) == 1
+    assert job.languages_required[0].language == "German"
+    assert job.languages_required[0].level == "C1"
+
+
+def test_convert_posting_language_level_defaults_to_unspecified():
+    job = convert_posting(_posting(description="You must speak German for this role."))
+    assert len(job.languages_required) == 1
+    assert job.languages_required[0].level == "unspecified"
 
 
 def test_job_id_is_deterministic_for_same_url():

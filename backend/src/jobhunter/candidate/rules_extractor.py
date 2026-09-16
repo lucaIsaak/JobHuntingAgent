@@ -13,7 +13,9 @@ from datetime import date
 
 from jobhunter.candidate.normalize import (
     DOMAIN_SIGNALS,
+    LANGUAGE_DISPLAY as _LANGUAGE_DISPLAY,
     LANGUAGE_LEVELS,
+    LANGUAGE_NAMES as _LANGUAGE_NAMES,
     SECTION_HEADERS,
     SKILLS_CATALOG,
     SOFT_SKILL_CATEGORIES,
@@ -78,17 +80,6 @@ _CERT_ACRONYMS = (
 )
 _CERT_PATTERN_RE = re.compile(r"([\w .&/-]*?\bcertifi(?:ed|cation)\b[\w .&/-]*)", re.IGNORECASE)
 
-_LANGUAGE_NAMES = (
-    "english", "german", "french", "spanish", "italian", "portuguese", "dutch", "mandarin",
-    "chinese", "japanese", "korean", "russian", "arabic", "polish", "turkish", "hindi",
-    "deutsch", "englisch", "französisch", "spanisch", "français", "anglais", "allemand",
-    "espagnol", "inglés", "alemán", "francés",
-)
-_LANGUAGE_DISPLAY = {
-    "deutsch": "German", "englisch": "English", "französisch": "French", "spanisch": "Spanish",
-    "français": "French", "anglais": "English", "allemand": "German", "espagnol": "Spanish",
-    "inglés": "English", "alemán": "German", "francés": "French",
-}
 _ISO_CODES = {
     "english": "en", "german": "de", "french": "fr", "spanish": "es", "italian": "it",
     "portuguese": "pt", "dutch": "nl", "mandarin": "zh", "chinese": "zh", "japanese": "ja",

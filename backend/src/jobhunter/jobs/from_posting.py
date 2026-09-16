@@ -3,18 +3,25 @@
 A smaller, job-side analogue of the CV extractor: reuses the same catalogs/heuristics
 (`candidate/normalize.py`) rather than duplicating them, so a skill or industry tag means the
 same thing on both sides of a match. Free-text scraped postings give no reliable must-have/
-nice-to-have, requirement, language, or certification signal, so those all default to
-empty/absent rather than being guessed — inventing them would let Layer A hard-knockout a
-candidate over a constraint the posting never actually stated.
+nice-to-have skill signal, general requirement text, or certification signal, so those all
+default to empty/absent rather than being guessed. Language is the one exception handled below:
+postings usually state it plainly enough ("you need to speak German and English, French is a
+plus") to distinguish a real requirement from a nice-to-have — inventing any of the other fields
+above would let Layer A hard-knockout a candidate over a constraint the posting never actually
+stated.
 """
 
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import UTC, datetime
 
 from jobhunter.candidate.normalize import (
     DOMAIN_SIGNALS,
+    LANGUAGE_DISPLAY,
+    LANGUAGE_LEVELS,
+    LANGUAGE_NAMES,
     SKILLS_CATALOG,
     contains_phrase,
     infer_seniority,
@@ -22,11 +29,22 @@ from jobhunter.candidate.normalize import (
     normalize_skill,
     normalize_title,
 )
-from jobhunter.jobs.schema import Job, JobSkill
+from jobhunter.jobs.schema import Job, JobLanguageRequirement, JobSkill
 from jobhunter.models.job import JobPosting
 from jobhunter.services.profile_extractor import extract_years_of_experience
 
 _ALL_SKILL_TERMS = sorted({term for terms in SKILLS_CATALOG.values() for term in terms}, key=len, reverse=True)
+
+_REQUIRED_LANGUAGE_QUALIFIERS = (
+    "required", "require", "requires", "must", "essential", "mandatory", "necessary", "need",
+    "prerequisite",
+    "erforderlich", "vorausgesetzt", "zwingend", "notwendig", "voraussetzung", "pflicht", "benötigt",
+)
+_OPTIONAL_LANGUAGE_QUALIFIERS = (
+    "plus", "nice to have", "advantage", "beneficial", "bonus", "desirable", "optional",
+    "von vorteil", "wünschenswert", "vorteilhaft", "willkommen",
+)
+_LEVEL_KEYS_BY_LENGTH_DESC = sorted(LANGUAGE_LEVELS, key=len, reverse=True)
 
 
 def _job_id_for_url(url: str) -> str:
@@ -41,6 +59,40 @@ def _remote_type(posting: JobPosting) -> str:
     if "hybrid" in posting.description.lower():
         return "hybrid"
     return "onsite"
+
+
+def _extract_required_languages(description: str) -> list[JobLanguageRequirement]:
+    """Only records a language as required when its own sentence/clause also carries an
+    explicit "required"/"must" cue — a bare mention (the posting is written in English, the
+    company operates in Germany, a duty involves translating between languages) is not treated
+    as a candidate requirement. A clause carrying a competing "plus"/"nice to have" cue is
+    treated as optional and skipped even if a required-sounding word appears too, and a clause
+    with neither cue is left out entirely — same conservative default as the other unproven
+    fields in this module. Level detection is best-effort per clause (like the CV extractor's),
+    so a clause naming two languages at different levels may mislabel one — harmless here since
+    the matching engine's hard-knockout check only looks at the language name, never the level.
+    """
+    requirements: dict[str, JobLanguageRequirement] = {}
+    for segment in re.split(r"[.,;\n]", description):
+        normalized_segment = normalize(segment)
+        if not any(contains_phrase(normalized_segment, qualifier) for qualifier in _REQUIRED_LANGUAGE_QUALIFIERS):
+            continue
+        if any(contains_phrase(normalized_segment, qualifier) for qualifier in _OPTIONAL_LANGUAGE_QUALIFIERS):
+            continue
+
+        level = "unspecified"
+        for level_key in _LEVEL_KEYS_BY_LENGTH_DESC:
+            if contains_phrase(normalized_segment, level_key):
+                level = level_key.upper() if len(level_key) <= 2 else level_key
+                break
+
+        for name in LANGUAGE_NAMES:
+            if not contains_phrase(normalized_segment, name):
+                continue
+            display_name = LANGUAGE_DISPLAY.get(name, name.title())
+            requirements.setdefault(display_name.lower(), JobLanguageRequirement(language=display_name, level=level))
+
+    return list(requirements.values())
 
 
 def convert_posting(posting: JobPosting) -> Job:
@@ -80,6 +132,7 @@ def convert_posting(posting: JobPosting) -> Job:
         seniority=seniority,
         description=posting.description,
         skills=skills,
+        languages_required=_extract_required_languages(posting.description),
         years_experience_min=years,
         years_experience_max=None,
         updated_at=datetime.now(UTC).isoformat(),
