@@ -239,3 +239,85 @@ def test_unified_search_missing_profile_returns_404(monkeypatch):
     )
 
     assert response.status_code == 404
+
+
+def test_set_job_feedback_like_then_clear():
+    _seed_one_job()
+    job_id = "api-test-job-1"
+    try:
+        liked = client.put(f"/api/jobs/{job_id}/feedback", json={"rating": "like"})
+        assert liked.status_code == 200
+        assert liked.json() == {"job_id": job_id, "rating": "like"}
+        assert candidate_routes.jobs_repository.get_job_feedback(job_id) == "like"
+
+        all_feedback = client.get("/api/jobs/feedback")
+        assert all_feedback.status_code == 200
+        assert all_feedback.json().get(job_id) == "like"
+
+        cleared = client.put(f"/api/jobs/{job_id}/feedback", json={"rating": None})
+        assert cleared.status_code == 200
+        assert cleared.json() == {"job_id": job_id, "rating": None}
+        assert candidate_routes.jobs_repository.get_job_feedback(job_id) is None
+    finally:
+        candidate_routes.jobs_repository.set_job_feedback(job_id, None)
+
+
+def test_set_job_feedback_missing_job_returns_404():
+    response = client.put("/api/jobs/does-not-exist/feedback", json={"rating": "like"})
+    assert response.status_code == 404
+
+
+def test_unified_search_boosts_jobs_sharing_a_liked_skill(monkeypatch):
+    """Liking a job with the 'rust' skill should raise the score of a *different* job that
+    shares that skill on a later search, and leave an unrelated job's score untouched — proving
+    the preference bonus generalizes from what was liked rather than just re-surfacing it."""
+    from jobhunter.jobs.from_posting import _job_id_for_url
+
+    postings = [
+        JobPosting(
+            source="stub", title="Platform Engineer", company="Acme Pref Test",
+            location="Berlin", employment_type=EmploymentType.FULL_TIME,
+            description="We build cloud infrastructure and tooling with Rust.",
+            url="https://example.com/jobs/pref-test-a",
+        ),
+        JobPosting(
+            source="stub", title="Platform Engineer", company="Acme Pref Test",
+            location="Berlin", employment_type=EmploymentType.FULL_TIME,
+            description="We build cloud infrastructure and tooling.",
+            url="https://example.com/jobs/pref-test-b",
+        ),
+    ]
+    monkeypatch.setattr(routes.orchestrator, "fetch_postings", _fake_fetch_postings(postings, {"stub": 2}))
+
+    job_a_id = _job_id_for_url("https://example.com/jobs/pref-test-a")
+    job_b_id = _job_id_for_url("https://example.com/jobs/pref-test-b")
+
+    baseline = client.post("/api/search", json={"role": "Platform Engineer", "sources": ["stub"], "limit": 5})
+    assert baseline.status_code == 200
+    baseline_by_id = {r["job_id"]: r for r in baseline.json()["results"]}
+    baseline_score_a = baseline_by_id[job_a_id]["overall_fit"]
+    baseline_score_b = baseline_by_id[job_b_id]["overall_fit"]
+
+    liked_job_id = "pref-test-liked-rust-job"
+    candidate_routes.jobs_repository.upsert_job(
+        Job(
+            job_id=liked_job_id,
+            title="Systems Programmer",
+            normalized_title="Systems Programmer",
+            company="RustCo",
+            skills=[JobSkill(name="Rust", normalized_name="Rust", is_must_have=False)],
+        )
+    )
+    try:
+        liked = client.put(f"/api/jobs/{liked_job_id}/feedback", json={"rating": "like"})
+        assert liked.status_code == 200
+
+        boosted = client.post("/api/search", json={"role": "Platform Engineer", "sources": ["stub"], "limit": 5})
+        assert boosted.status_code == 200
+        boosted_by_id = {r["job_id"]: r for r in boosted.json()["results"]}
+
+        assert boosted_by_id[job_a_id]["overall_fit"] > baseline_score_a
+        assert any("liked" in reason for reason in boosted_by_id[job_a_id]["match_reasons"])
+        assert boosted_by_id[job_b_id]["overall_fit"] == baseline_score_b
+    finally:
+        candidate_routes.jobs_repository.set_job_feedback(liked_job_id, None)

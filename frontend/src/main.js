@@ -8,6 +8,7 @@ const state = {
   results: [],
   runId: '',
   jobsById: {},
+  feedbackByJobId: {},
   skillsCatalog: null,
 }
 
@@ -364,13 +365,40 @@ function renderResultCard(result, index) {
   const reasons = (result.match_reasons || []).map((reason) => `<span>${reason}</span>`).join('')
   const gaps = (result.gap_reasons || []).map((reason) => `<span>${reason}</span>`).join('')
   const subscores = Object.entries(result.subscores || {}).map(([name, value]) => `<span>${name}: ${Math.round(value * 100)}%</span>`).join('')
-  return `<article class="job-card"><div class="job-card-top"><span class="rank">${rank}</span><span class="match-score">${Math.round(result.overall_fit)}% match</span></div><span class="source">${job ? job.source || job.company : result.job_id}</span><h4>${job ? job.title : 'Job details unavailable'}</h4>${job ? `<p class="company">${job.company} <span>·</span> ${job.location || 'Unspecified'}</p>` : ''}${job ? `<div class="job-tags"><span>${job.remote_type === 'remote' ? 'Remote' : job.location || 'Unspecified'}</span><span>${(job.employment_type || '').replace('_', ' ')}</span></div>` : ''}${reasons ? `<div class="job-tags">${reasons}</div>` : ''}${gaps ? `<div class="job-tags gap-tags">${gaps}</div>` : ''}${subscores ? `<details class="cm-subscores"><summary>Subscores &amp; evidence</summary><div class="job-tags">${subscores}</div></details>` : ''}${job && job.url ? `<a class="open-job" href="${job.url}" target="_blank" rel="noreferrer">Open posting ↗</a>` : ''}</article>`
+  const rating = state.feedbackByJobId[result.job_id] || null
+  const feedbackHtml = `<div class="job-card-actions"><button type="button" class="feedback-btn like-btn${rating === 'like' ? ' is-active' : ''}" data-job-id="${result.job_id}" data-rating="like" aria-label="Like this job" aria-pressed="${rating === 'like'}">👍</button><button type="button" class="feedback-btn dislike-btn${rating === 'dislike' ? ' is-active' : ''}" data-job-id="${result.job_id}" data-rating="dislike" aria-label="Dislike this job" aria-pressed="${rating === 'dislike'}">👎</button></div>`
+  return `<article class="job-card" data-job-id="${result.job_id}"><div class="job-card-top"><span class="rank">${rank}</span><span class="match-score">${Math.round(result.overall_fit)}% match</span></div>${feedbackHtml}<span class="source">${job ? job.source || job.company : result.job_id}</span><h4>${job ? job.title : 'Job details unavailable'}</h4>${job ? `<p class="company">${job.company} <span>·</span> ${job.location || 'Unspecified'}</p>` : ''}${job ? `<div class="job-tags"><span>${job.remote_type === 'remote' ? 'Remote' : job.location || 'Unspecified'}</span><span>${(job.employment_type || '').replace('_', ' ')}</span></div>` : ''}${reasons ? `<div class="job-tags">${reasons}</div>` : ''}${gaps ? `<div class="job-tags gap-tags">${gaps}</div>` : ''}${subscores ? `<details class="cm-subscores"><summary>Subscores &amp; evidence</summary><div class="job-tags">${subscores}</div></details>` : ''}${job && job.url ? `<a class="open-job" href="${job.url}" target="_blank" rel="noreferrer">Open posting ↗</a>` : ''}</article>`
 }
 
 function renderResultsGrid(items) {
   const grid = $('results-grid')
   if (!items.length) { grid.innerHTML = '<div class="empty-results"><span class="empty-mark">—</span><strong>No matching roles yet.</strong><span>Try loosening the filters.</span></div>'; return }
   grid.innerHTML = items.map((result, index) => renderResultCard(result, index)).join('')
+  wireResultCardEvents()
+}
+
+async function setJobFeedback(jobId, rating) {
+  const previous = state.feedbackByJobId[jobId] || null
+  const next = previous === rating ? null : rating // clicking the active rating again clears it
+  state.feedbackByJobId[jobId] = next
+  renderResultsGrid(state.results)
+  try {
+    const response = await fetch(`${API_URL}/api/jobs/${encodeURIComponent(jobId)}/feedback`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: next }),
+    })
+    if (!response.ok) throw new Error(await apiError(response))
+  } catch {
+    state.feedbackByJobId[jobId] = previous
+    renderResultsGrid(state.results)
+  }
+}
+
+function wireResultCardEvents() {
+  document.querySelectorAll('.feedback-btn').forEach((button) => {
+    button.addEventListener('click', () => setJobFeedback(button.dataset.jobId, button.dataset.rating))
+  })
 }
 
 function renderResults(response) {
@@ -389,6 +417,14 @@ async function loadJobsById() {
     if (!response.ok) return
     state.jobsById = Object.fromEntries((await response.json()).map((job) => [job.job_id, job]))
   } catch { /* best effort — results still render, falling back to job_id where a title would go */ }
+}
+
+async function loadJobFeedback() {
+  try {
+    const response = await fetch(`${API_URL}/api/jobs/feedback`)
+    if (!response.ok) return
+    state.feedbackByJobId = await response.json()
+  } catch { /* best effort — cards just render with no rating pre-selected */ }
 }
 
 async function runSearch() {
@@ -416,7 +452,7 @@ async function runSearch() {
     const response = await fetch(`${API_URL}/api/search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     if (!response.ok) throw new Error(await apiError(response))
     const result = await response.json()
-    await loadJobsById()
+    await Promise.all([loadJobsById(), loadJobFeedback()])
     renderResults(result)
   } catch (error) { $('result-count').textContent = error.message } finally { $('run-search').disabled = false; $('run-search').innerHTML = 'Run search <span>↗</span>' }
 }
@@ -425,7 +461,7 @@ async function loadRun() {
   const runId = $('run-id').value.trim(); if (!runId) return
   $('result-count').textContent = 'Loading saved run...'
   try {
-    await loadJobsById()
+    await Promise.all([loadJobsById(), loadJobFeedback()])
     const response = await fetch(`${API_URL}/api/match-runs/${encodeURIComponent(runId)}`)
     if (!response.ok) throw new Error(await apiError(response))
     renderResults(await response.json())

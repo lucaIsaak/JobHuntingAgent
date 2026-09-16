@@ -110,3 +110,40 @@ def test_corpus_stats_roundtrip(tmp_path):
     stats, count = repo.get_corpus_stats()
     assert stats == {"python": 5, "sql": 3}
     assert count == 10
+
+
+def test_set_and_get_job_feedback(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(job_id="j1"))
+    assert repo.get_job_feedback("j1") is None
+
+    repo.set_job_feedback("j1", "like")
+    assert repo.get_job_feedback("j1") == "like"
+
+
+def test_set_job_feedback_replaces_not_duplicates(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(job_id="j1"))
+    repo.set_job_feedback("j1", "like")
+    repo.set_job_feedback("j1", "dislike")
+    assert repo.get_job_feedback("j1") == "dislike"
+    assert repo.all_job_feedback() == {"j1": "dislike"}
+
+
+def test_set_job_feedback_none_clears_rating(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(job_id="j1"))
+    repo.set_job_feedback("j1", "like")
+    repo.set_job_feedback("j1", None)
+    assert repo.get_job_feedback("j1") is None
+    assert repo.all_job_feedback() == {}
+
+
+def test_all_job_feedback_reflects_multiple_jobs(tmp_path):
+    repo = JobsRepository(database_path=str(tmp_path / "jobs.sqlite3"))
+    repo.upsert_job(_job(job_id="j1"))
+    repo.upsert_job(_job(job_id="j2"))
+    repo.upsert_job(_job(job_id="j3"))
+    repo.set_job_feedback("j1", "like")
+    repo.set_job_feedback("j2", "dislike")
+    assert repo.all_job_feedback() == {"j1": "like", "j2": "dislike"}

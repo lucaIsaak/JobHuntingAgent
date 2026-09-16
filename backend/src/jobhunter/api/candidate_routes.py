@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -21,6 +22,7 @@ from jobhunter.jobs.from_posting import convert_posting
 from jobhunter.jobs.schema import Job
 from jobhunter.matching import engine
 from jobhunter.matching.keyword_rank import score_by_keywords
+from jobhunter.matching.preference import build_preference_signals, score_preference_bonus
 from jobhunter.matching.schema import MatchFilters, MatchResult, MatchRun, MatchWeights
 from jobhunter.matching.semantic import build_corpus_stats
 from jobhunter.models.search_criteria import CandidateProfile as LegacyCandidateProfile, SearchCriteria
@@ -102,6 +104,45 @@ def update_candidate_profile(profile_id: str, profile: CandidateProfile) -> Cand
         raise HTTPException(status_code=400, detail="profile_id in body must match the URL")
     candidate_repository.save_profile(profile)
     return profile
+
+
+def _apply_preference_bonus(results: list[MatchResult]) -> list[MatchResult]:
+    """Nudges results by the user's accumulated like/dislike feedback (see
+    `matching/preference.py`) and re-sorts. A no-op — returns `results` unchanged — until at
+    least one job has been rated."""
+    feedback = jobs_repository.all_job_feedback()
+    if not feedback:
+        return results
+    signals = build_preference_signals(feedback, jobs_repository.get_job)
+    if signals.is_empty():
+        return results
+
+    boosted: list[MatchResult] = []
+    for result in results:
+        job = jobs_repository.get_job(result.job_id)
+        bonus = score_preference_bonus(job, signals) if job else 0.0
+        if bonus == 0.0:
+            boosted.append(result)
+        elif bonus > 0:
+            boosted.append(
+                result.model_copy(
+                    update={
+                        "overall_fit": min(100.0, result.overall_fit + bonus),
+                        "match_reasons": [*result.match_reasons, "similar to jobs you've liked"],
+                    }
+                )
+            )
+        else:
+            boosted.append(
+                result.model_copy(
+                    update={
+                        "overall_fit": max(0.0, result.overall_fit + bonus),
+                        "gap_reasons": [*result.gap_reasons, "similar to jobs you've disliked"],
+                    }
+                )
+            )
+    boosted.sort(key=lambda result: result.overall_fit, reverse=True)
+    return boosted
 
 
 class UnifiedSearchRequest(BaseModel):
@@ -192,7 +233,10 @@ def unified_search(payload: UnifiedSearchRequest) -> UnifiedSearchResponse:
             filters=filters,
             top_k=payload.limit,
         )
-        run_id, results = match_run.run_id, match_run.results
+        run_id, results = match_run.run_id, _apply_preference_bonus(match_run.results)
+        # engine.run_match() already persisted the unboosted run — re-save so a later
+        # GET /api/match-runs/{run_id} reflects the same boosted order returned here.
+        match_repository.save_match_run(match_run.model_copy(update={"results": results}))
     else:
         query_text = f"{payload.role} {' '.join(payload.keywords)}"
         scored = [
@@ -205,7 +249,7 @@ def unified_search(payload: UnifiedSearchRequest) -> UnifiedSearchResponse:
         ]
         scored = [result for result in scored if result.overall_fit >= payload.min_score]
         scored.sort(key=lambda result: result.overall_fit, reverse=True)
-        results = scored[: payload.limit]
+        results = _apply_preference_bonus(scored[: payload.limit])
         run_id = str(uuid4())
         match_repository.save_match_run(
             MatchRun(
@@ -290,3 +334,27 @@ def list_jobs(
         employment_type=employment_type,
     )
     return jobs_repository.prefilter(filters)
+
+
+class JobFeedbackRequest(BaseModel):
+    rating: Literal["like", "dislike"] | None = None
+
+
+class JobFeedbackResponse(BaseModel):
+    job_id: str
+    rating: str | None
+
+
+@router.put("/jobs/{job_id}/feedback", response_model=JobFeedbackResponse)
+def set_job_feedback(job_id: str, payload: JobFeedbackRequest) -> JobFeedbackResponse:
+    if not jobs_repository.get_job(job_id):
+        raise HTTPException(status_code=404, detail="job not found")
+    jobs_repository.set_job_feedback(job_id, payload.rating)
+    return JobFeedbackResponse(job_id=job_id, rating=payload.rating)
+
+
+@router.get("/jobs/feedback", response_model=dict[str, str])
+def get_all_job_feedback() -> dict[str, str]:
+    """{job_id: 'like' | 'dislike'} for every rated job, so the frontend can hydrate which
+    result cards are already rated in one call."""
+    return jobs_repository.all_job_feedback()

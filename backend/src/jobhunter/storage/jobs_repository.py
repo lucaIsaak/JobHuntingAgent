@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 
 from jobhunter.jobs.schema import Job
@@ -96,6 +97,16 @@ class JobsRepository:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS job_feedback (
+                    job_id TEXT PRIMARY KEY,
+                    rating TEXT NOT NULL,
+                    rated_at TEXT NOT NULL,
+                    FOREIGN KEY(job_id) REFERENCES jobs(job_id)
+                )
+                """
+            )
 
     def upsert_job(self, job: Job) -> None:
         with self._connect() as conn:
@@ -137,6 +148,30 @@ class JobsRepository:
         with self._connect() as conn:
             row = conn.execute("SELECT job_json FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
         return Job.model_validate_json(row[0]) if row else None
+
+    def set_job_feedback(self, job_id: str, rating: str | None) -> None:
+        """`rating` is 'like', 'dislike', or None to clear a previous rating (toggle-off)."""
+        with self._connect() as conn:
+            if rating is None:
+                conn.execute("DELETE FROM job_feedback WHERE job_id = ?", (job_id,))
+                return
+            conn.execute(
+                """
+                INSERT INTO job_feedback (job_id, rating, rated_at) VALUES (?, ?, ?)
+                ON CONFLICT(job_id) DO UPDATE SET rating = excluded.rating, rated_at = excluded.rated_at
+                """,
+                (job_id, rating, datetime.now(UTC).isoformat()),
+            )
+
+    def get_job_feedback(self, job_id: str) -> str | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT rating FROM job_feedback WHERE job_id = ?", (job_id,)).fetchone()
+        return row[0] if row else None
+
+    def all_job_feedback(self) -> dict[str, str]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT job_id, rating FROM job_feedback").fetchall()
+        return dict(rows)
 
     def count(self) -> int:
         with self._connect() as conn:
