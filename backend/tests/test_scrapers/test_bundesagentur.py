@@ -55,6 +55,8 @@ def test_bundesagentur_scraper_fetches_additional_pages_to_reach_the_limit():
     requested = []
 
     def fake_fetch(request, timeout):
+        if "/jobdetails/" in request.full_url:
+            return FakeResponse({"stellenangebotsBeschreibung": ""})
         query = dict(pair.split("=") for pair in request.full_url.split("?", 1)[1].split("&"))
         page = int(query["page"])
         requested.append(page)
@@ -73,6 +75,8 @@ def test_bundesagentur_scraper_stops_early_on_a_short_page():
     requested = []
 
     def fake_fetch(request, timeout):
+        if "/jobdetails/" in request.full_url:
+            return FakeResponse({"stellenangebotsBeschreibung": ""})
         query = dict(pair.split("=") for pair in request.full_url.split("?", 1)[1].split("&"))
         requested.append(int(query["page"]))
         return FakeResponse(_bundesagentur_page_payload(5, 1))  # short page, well under 100
@@ -83,6 +87,50 @@ def test_bundesagentur_scraper_stops_early_on_a_short_page():
 
     assert requested == [1]
     assert len(results) == 5
+
+
+def test_bundesagentur_scraper_fetches_description_via_jobdetails_when_missing_from_search():
+    detail_requests = []
+
+    def fake_fetch(request, timeout):
+        if "/jobdetails/" in request.full_url:
+            detail_requests.append(request.full_url)
+            return FakeResponse({"stellenangebotsBeschreibung": "Full posting text."})
+        return FakeResponse({"ergebnisliste": [{
+            "stellenangebotsTitel": "Software Engineer",
+            "arbeitgeber": "Example GmbH",
+            "referenznummer": "10001-123-S",
+            "externeUrl": "https://example.com/job",
+            "stellenlokationen": [{"adresse": {"ort": "Berlin"}}],
+        }]})
+
+    scraper = BundesagenturScraper(fetch=fake_fetch)
+
+    results = scraper.search(SearchCriteria(role="Software Engineer"))
+
+    assert len(detail_requests) == 1
+    assert "jobdetails" in detail_requests[0]
+    assert results[0].description == "Full posting text."
+
+
+def test_bundesagentur_scraper_leaves_description_empty_when_jobdetails_lookup_fails():
+    def fake_fetch(request, timeout):
+        if "/jobdetails/" in request.full_url:
+            raise OSError("boom")
+        return FakeResponse({"ergebnisliste": [{
+            "stellenangebotsTitel": "Software Engineer",
+            "arbeitgeber": "Example GmbH",
+            "referenznummer": "10001-123-S",
+            "externeUrl": "https://example.com/job",
+            "stellenlokationen": [{"adresse": {"ort": "Berlin"}}],
+        }]})
+
+    scraper = BundesagenturScraper(fetch=fake_fetch)
+
+    results = scraper.search(SearchCriteria(role="Software Engineer"))
+
+    assert len(results) == 1
+    assert results[0].description == ""
 
 
 def test_bundesagentur_scraper_logs_and_fails_closed_on_provider_errors(caplog):

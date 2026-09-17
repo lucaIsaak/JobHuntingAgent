@@ -483,15 +483,26 @@ async function saveCandidateProfileEdits() {
 
 // --- Screen 2: search/filter + results grid ---
 
+const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]))
+
+const CARD_DESCRIPTION_MAX_CHARS = 220
+
+function summarizeDescription(description) {
+  const clean = (description || '').replace(/\s+/g, ' ').trim()
+  if (!clean) return ''
+  if (clean.length <= CARD_DESCRIPTION_MAX_CHARS) return clean
+  const truncated = clean.slice(0, CARD_DESCRIPTION_MAX_CHARS)
+  const cutAt = truncated.lastIndexOf(' ')
+  return `${truncated.slice(0, cutAt > 0 ? cutAt : CARD_DESCRIPTION_MAX_CHARS)}…`
+}
+
 function renderResultCard(result, index) {
   const rank = String(index + 1).padStart(2, '0')
   const job = state.jobsById[result.job_id]
-  const reasons = (result.match_reasons || []).map((reason) => `<span>${reason}</span>`).join('')
-  const gaps = (result.gap_reasons || []).map((reason) => `<span>${reason}</span>`).join('')
-  const subscores = Object.entries(result.subscores || {}).map(([name, value]) => `<span>${name}: ${Math.round(value * 100)}%</span>`).join('')
+  const summary = summarizeDescription(job && job.description)
   const rating = state.feedbackByJobId[result.job_id] || null
   const feedbackHtml = `<div class="job-card-actions"><button type="button" class="feedback-btn like-btn${rating === 'like' ? ' is-active' : ''}" data-job-id="${result.job_id}" data-rating="like" aria-label="Like this job" aria-pressed="${rating === 'like'}">👍</button><button type="button" class="feedback-btn dislike-btn${rating === 'dislike' ? ' is-active' : ''}" data-job-id="${result.job_id}" data-rating="dislike" aria-label="Dislike this job" aria-pressed="${rating === 'dislike'}">👎</button></div>`
-  return `<article class="job-card" data-job-id="${result.job_id}"><div class="job-card-top"><span class="rank">${rank}</span><span class="match-score">${Math.round(result.overall_fit)}% match</span></div>${feedbackHtml}<span class="source">${job ? job.source || job.company : result.job_id}</span><h4>${job ? job.title : 'Job details unavailable'}</h4>${job ? `<p class="company">${job.company} <span>·</span> ${job.location || 'Unspecified'}</p>` : ''}${job ? `<div class="job-tags"><span>${job.remote_type === 'remote' ? 'Remote' : job.location || 'Unspecified'}</span><span>${(job.employment_type || '').replace('_', ' ')}</span></div>` : ''}${reasons ? `<div class="job-tags">${reasons}</div>` : ''}${gaps ? `<div class="job-tags gap-tags">${gaps}</div>` : ''}${subscores ? `<details class="cm-subscores"><summary>Subscores &amp; evidence</summary><div class="job-tags">${subscores}</div></details>` : ''}${job && job.url ? `<a class="open-job" href="${job.url}" target="_blank" rel="noreferrer">Open posting ↗</a>` : ''}</article>`
+  return `<article class="job-card" data-job-id="${result.job_id}"><div class="job-card-top"><span class="rank">${rank}</span><span class="match-score">${Math.round(result.overall_fit)}% match</span></div>${feedbackHtml}<span class="source">${job ? job.source || job.company : result.job_id}</span><h4>${job ? job.title : 'Job details unavailable'}</h4>${job ? `<p class="company">${job.company} <span>·</span> ${job.location || 'Unspecified'}</p>` : ''}${job ? `<div class="job-tags"><span>${job.remote_type === 'remote' ? 'Remote' : job.location || 'Unspecified'}</span><span>${(job.employment_type || '').replace('_', ' ')}</span></div>` : ''}${summary ? `<p class="job-description">${escapeHtml(summary)}</p>` : ''}${job && job.url ? `<a class="open-job" href="${job.url}" target="_blank" rel="noreferrer">Open posting ↗</a>` : ''}</article>`
 }
 
 function renderResultsGrid(items) {
